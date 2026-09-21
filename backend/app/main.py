@@ -5,7 +5,7 @@ Main FastAPI Application Entrypoint for NyaySahayak.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.database import engine, Base
-from app.api import auth, cases, documents, verification, case_graph
+from app.api import auth, cases, documents, verification, case_graph, simulation
 
 # Initialize Database tables
 Base.metadata.create_all(bind=engine)
@@ -13,7 +13,7 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title="NyaySahayak API",
     description="Verified Multi-Agent AI System for Courtroom Preparation",
-    version="0.2.0"
+    version="0.3.0"
 )
 
 # CORS Middleware setup
@@ -31,6 +31,7 @@ app.include_router(cases.router)
 app.include_router(documents.router)
 app.include_router(verification.router)
 app.include_router(case_graph.router)
+app.include_router(simulation.router)
 
 @app.get("/")
 def root():

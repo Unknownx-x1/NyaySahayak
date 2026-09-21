@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Scale, FileText, Layers, Sparkles, Home, LayoutDashboard, ArrowLeft } from 'lucide-react';
+import { ShieldCheck, Scale, FileText, Layers, Sparkles, Home, LayoutDashboard, ArrowLeft, Swords } from 'lucide-react';
 import { CaseUpload } from './components/CaseUpload';
 import { DocumentViewer } from './components/DocumentViewer';
 import { CitationBadge } from './components/CitationBadge';
 import { CorpusWhitelistView } from './components/CorpusWhitelistView';
 import { CaseGraphDashboard, CaseGraph } from './components/CaseGraphDashboard';
+import { CourtroomSimulation } from './components/CourtroomSimulation';
 
 interface CitationReport {
   citation_id: string;
@@ -22,7 +23,7 @@ export default function App() {
   const [activeCaseId, setActiveCaseId] = useState<string>('case_demo_001');
   const [documents, setDocuments] = useState<any[]>([]);
   const [selectedDoc, setSelectedDoc] = useState<any | null>(null);
-  const [activeRightTab, setActiveRightTab] = useState<'document' | 'case_graph'>('document');
+  const [activeRightTab, setActiveRightTab] = useState<'document' | 'case_graph' | 'simulation'>('document');
   
   // Phase 2 Case Graph State
   const [caseGraph, setCaseGraph] = useState<CaseGraph | null>(null);
@@ -272,9 +273,9 @@ export default function App() {
             </div>
           </div>
 
-          {/* Right Column: Dynamic View Switcher (Document Viewer vs Master Case Graph Dashboard) */}
+          {/* Right Column: Dynamic View Switcher (Document Viewer vs Master Case Graph Dashboard vs Courtroom Arena) */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', flexWrap: 'wrap' }}>
               <button
                 className={`btn ${activeRightTab === 'document' ? 'btn-primary' : ''}`}
                 onClick={() => setActiveRightTab('document')}
@@ -289,16 +290,27 @@ export default function App() {
               >
                 <Layers size={14} /> Master Case Graph Dashboard
               </button>
+              <button
+                className={`btn ${activeRightTab === 'simulation' ? 'btn-primary' : ''}`}
+                onClick={() => setActiveRightTab('simulation')}
+                style={{ fontSize: '0.8rem' }}
+              >
+                <Swords size={14} /> Multi-Agent Courtroom Arena
+              </button>
             </div>
 
-            {activeRightTab === 'document' ? (
+            {activeRightTab === 'document' && (
               <DocumentViewer document={selectedDoc} />
-            ) : (
+            )}
+            {activeRightTab === 'case_graph' && (
               <CaseGraphDashboard
                 caseGraph={caseGraph}
                 onGenerateGraph={handleGenerateCaseGraph}
                 loading={compilingGraph}
               />
+            )}
+            {activeRightTab === 'simulation' && (
+              <CourtroomSimulation caseId={activeCaseId} />
             )}
           </div>
         </div>
