@@ -38,7 +38,7 @@ export const FooterCTA: React.FC<FooterCTAProps> = ({ onOpenChat }) => {
               onClick={onOpenChat}
               className="btn-pill btn-primary-gold px-10 py-4 text-base font-bold shadow-2xl"
             >
-              <span>Ask Nyaysahayak Free</span>
+              <span>Launch Legal Workspace</span>
               <ArrowRight className="w-5 h-5 text-slate-950" />
             </button>
           </div>
