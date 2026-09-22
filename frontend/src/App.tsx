@@ -20,6 +20,7 @@ import { CitationBadge } from './components/CitationBadge';
 import { CorpusWhitelistView } from './components/CorpusWhitelistView';
 import { CaseGraphDashboard, CaseGraph } from './components/CaseGraphDashboard';
 import { CourtroomSimulation } from './components/CourtroomSimulation';
+import { LandingPage } from './components/landing/LandingPage';
 
 interface CitationReport {
   citation_id: string;
@@ -36,6 +37,12 @@ interface CitationReport {
 export type TabMode = 'documents' | 'case_graph' | 'simulation' | 'verification' | 'corpus';
 
 export default function App() {
+  const [currentView, setCurrentView] = useState<'landing' | 'workspace'>(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#workspace') {
+      return 'workspace';
+    }
+    return 'landing';
+  });
   const [activeCaseId, setActiveCaseId] = useState<string>('case_demo_001');
   const [documents, setDocuments] = useState<any[]>([]);
   const [selectedDoc, setSelectedDoc] = useState<any | null>(null);
@@ -113,11 +120,45 @@ export default function App() {
     }
   };
 
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (window.location.hash === '#workspace') {
+        setCurrentView('workspace');
+      } else if (window.location.hash === '#landing' || !window.location.hash) {
+        setCurrentView('landing');
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const navigateToWorkspace = () => {
+    setCurrentView('workspace');
+    window.location.hash = '#workspace';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const navigateToLanding = () => {
+    setCurrentView('landing');
+    window.location.hash = '#landing';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // If on landing page, display the full-featured LandingPage experience
+  if (currentView === 'landing') {
+    return <LandingPage onLaunchAppWorkspace={navigateToWorkspace} />;
+  }
+
   return (
     <div className="app-container">
       {/* Top Header with Navigation Tabs */}
       <header className="header">
-        <div className="logo-group">
+        <div 
+          className="logo-group" 
+          onClick={navigateToLanding}
+          style={{ cursor: 'pointer' }}
+          title="Back to Landing Page"
+        >
           <div className="logo-badge">NYAY</div>
           <div>
             <div className="logo-title">NyaySahayak</div>
@@ -182,14 +223,15 @@ export default function App() {
             <span>{compilingGraph ? 'Compiling Graph...' : 'Compile Graph'}</span>
           </button>
 
-          <a
-            href="http://127.0.0.1:8080"
+          <button
+            onClick={navigateToLanding}
             className="btn btn-ghost"
             style={{ fontSize: '0.8rem', padding: '0.45rem 0.85rem' }}
+            title="Return to Landing Page"
           >
             <Home size={14} />
-            <span>Landing</span>
-          </a>
+            <span>Landing Page</span>
+          </button>
         </div>
       </header>
 
