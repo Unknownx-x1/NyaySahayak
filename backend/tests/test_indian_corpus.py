@@ -83,3 +83,43 @@ def test_corpus_whitelist_includes_ildc():
     assert "ildc_supreme_court" in source_ids
     assert "sc_judgments" in source_ids
     assert "central_bare_acts" in source_ids
+
+def test_corpus_sql_search_execution():
+    """Verify that execute_sql runs valid SELECT queries safely."""
+    res = corpus_retriever.execute_sql("SELECT case_title, year, court FROM corpus_chunks LIMIT 5")
+    assert res["success"] is True
+    assert res["row_count"] > 0
+    assert "case_title" in res["columns"]
+    assert res["error"] is None
+    assert res["execution_time_ms"] >= 0.0
+
+def test_corpus_sql_search_prevents_mutation():
+    """Verify that execute_sql strictly forbids DROP, DELETE, or mutation queries."""
+    res_drop = corpus_retriever.execute_sql("DROP TABLE corpus_chunks")
+    assert res_drop["success"] is False
+    assert "forbidden" in res_drop["error"].lower() or "read-only" in res_drop["error"].lower()
+
+    res_insert = corpus_retriever.execute_sql("INSERT INTO corpus_chunks VALUES ('fake', 'fake')")
+    assert res_insert["success"] is False
+    assert "forbidden" in res_insert["error"].lower() or "read-only" in res_insert["error"].lower()
+
+def test_corpus_sql_endpoint_via_client():
+    """Verify FastAPI /api/verification/corpus/sql and stats endpoints."""
+    from fastapi.testclient import TestClient
+    from app.main import app
+    client = TestClient(app)
+
+    # Test SQL execution endpoint
+    res = client.post("/api/verification/corpus/sql", json={"query": "SELECT document_id, case_title FROM corpus_chunks LIMIT 3"})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["success"] is True
+    assert data["row_count"] == 3
+    assert len(data["rows"]) == 3
+
+    # Test Stats endpoint
+    stats_res = client.get("/api/verification/corpus/stats")
+    assert stats_res.status_code == 200
+    stats_data = stats_res.json()
+    assert stats_data["total_records"] > 0
+    assert stats_data["fts_enabled"] is True
