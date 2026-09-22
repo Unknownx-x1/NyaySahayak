@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Clock, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Calendar, Clock, AlertTriangle, ExternalLink, Sparkles } from 'lucide-react';
 
 export interface TimelineEvent {
   event_id: string;
@@ -15,26 +15,52 @@ export interface TimelineEvent {
 
 interface TimelineViewerProps {
   events: TimelineEvent[];
+  onGenerateTimeline?: () => void;
+  loading?: boolean;
 }
 
-export const TimelineViewer: React.FC<TimelineViewerProps> = ({ events }) => {
+export const TimelineViewer: React.FC<TimelineViewerProps> = ({ events, onGenerateTimeline, loading = false }) => {
   if (!events || events.length === 0) {
     return (
-      <div className="card" style={{ textAlign: 'center', padding: '3rem 1.5rem', color: 'var(--text-muted)' }}>
-        <Calendar size={40} style={{ marginBottom: '1rem', opacity: 0.5, color: '#ffffff' }} />
-        <h4 style={{ color: 'var(--text-secondary)' }}>No Chronological Events Extracted</h4>
-        <p style={{ fontSize: '0.85rem' }}>Upload case material to generate the page-linked Case Timeline.</p>
+      <div className="card" style={{ textAlign: 'center', padding: '3.5rem 1.5rem', color: 'var(--text-muted)' }}>
+        <Calendar size={44} style={{ marginBottom: '1rem', opacity: 0.6, color: '#ffffff' }} />
+        <h4 style={{ color: '#ffffff', marginBottom: '0.4rem' }}>No Chronological Events Extracted Yet</h4>
+        <p style={{ fontSize: '0.85rem', maxWidth: '480px', margin: '0 auto 1.25rem', color: 'var(--text-secondary)' }}>
+          Extract an accurate chronological timeline of government orders, tender dates, impugned notices, and petition milestones from the uploaded case filings using Groq LLM.
+        </p>
+        {onGenerateTimeline && (
+          <button className="btn btn-primary" onClick={onGenerateTimeline} disabled={loading} style={{ padding: '0.55rem 1.25rem', fontSize: '0.84rem' }}>
+            <Sparkles size={16} /> {loading ? 'Extracting Chronology with Groq...' : 'Generate Case Timeline with Groq'}
+          </button>
+        )}
       </div>
     );
   }
 
   return (
     <div className="card">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-color)', marginBottom: '1rem' }}>
-        <h3 className="card-title" style={{ marginBottom: 0 }}>
-          <Calendar size={18} style={{ color: '#ffffff' }} /> Dynamic Case Timeline ({events.length} Events)
-        </h3>
-        <span className="provenance-tag">Page-Linked Chronology</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-color)', marginBottom: '1.25rem' }}>
+        <div>
+          <h3 className="card-title" style={{ marginBottom: '0.2rem' }}>
+            <Calendar size={18} style={{ color: '#ffffff' }} /> Dynamic Case Timeline ({events.length} Events)
+          </h3>
+          <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+            Chronological milestone chain extracted and verified against case record
+          </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          {onGenerateTimeline && (
+            <button 
+              className="btn btn-primary" 
+              onClick={onGenerateTimeline} 
+              disabled={loading}
+              style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+            >
+              <Sparkles size={13} /> {loading ? 'Extracting...' : 'Re-Compile with Groq'}
+            </button>
+          )}
+          <span className="provenance-tag">Page-Linked Chronology</span>
+        </div>
       </div>
 
       <div style={{ position: 'relative', paddingLeft: '1.5rem', borderLeft: '2px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>

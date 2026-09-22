@@ -63,6 +63,8 @@ class EvidenceItem(BaseModel):
     claim_supported: str
     strength: EvidenceStrength
     notes: Optional[str] = None
+    admissibility_status: Optional[str] = None
+    vulnerability_note: Optional[str] = None
     document_id: str
     page_number: int
     text_span: str

@@ -176,3 +176,85 @@ def get_document_pages(doc_id: str, db: Session = Depends(get_db)):
             provenance=c.provenance_json
         ) for c in chunks
     ]
+
+@router.get("/{doc_id}/chunks", response_model=List[DocumentChunkResponse])
+def get_document_chunks(doc_id: str, db: Session = Depends(get_db)):
+    """Convenience alias for /api/documents/{doc_id}/pages."""
+    return get_document_pages(doc_id=doc_id, db=db)
+
+class RAGQueryRequest(BaseModel):
+    query: str
+    document_id: Optional[str] = None
+    case_id: Optional[str] = None
+    top_k: Optional[int] = 4
+
+from app.services.rag_engine import LegalDocumentRAGEngine, RAGQueryResponse
+
+@router.post("/rag/query", response_model=RAGQueryResponse)
+def query_document_rag(payload: RAGQueryRequest, db: Session = Depends(get_db)):
+    """
+    RAG Query Endpoint: Retrieves relevant page spans and generates an answer
+    using Groq LLM (or Gemini/OpenAI/heuristic fallback).
+    """
+    chunks = []
+    filename = "Legal Filing"
+
+    if payload.document_id:
+        doc = db.query(Document).filter(Document.id == payload.document_id).first()
+        if doc:
+            filename = doc.filename
+        db_chunks = db.query(DocumentChunk).filter(DocumentChunk.document_id == payload.document_id).all()
+        chunks = [
+            {
+                "document_id": c.document_id,
+                "page_number": c.page_number,
+                "chunk_index": c.chunk_index,
+                "text_content": c.text_content,
+                "language": c.language,
+                "script_type": c.script_type,
+                "ocr_applied": c.ocr_applied,
+                "provenance_json": c.provenance_json
+            } for c in db_chunks
+        ]
+    elif payload.case_id:
+        docs = db.query(Document).filter(Document.case_id == payload.case_id).all()
+        doc_ids = [d.id for d in docs]
+        if docs:
+            filename = f"Case Filings ({len(docs)} files)"
+        db_chunks = db.query(DocumentChunk).filter(DocumentChunk.document_id.in_(doc_ids)).all() if doc_ids else []
+        chunks = [
+            {
+                "document_id": c.document_id,
+                "page_number": c.page_number,
+                "chunk_index": c.chunk_index,
+                "text_content": c.text_content,
+                "language": c.language,
+                "script_type": c.script_type,
+                "ocr_applied": c.ocr_applied,
+                "provenance_json": c.provenance_json
+            } for c in db_chunks
+        ]
+
+    if not chunks:
+        db_chunks = db.query(DocumentChunk).limit(30).all()
+        chunks = [
+            {
+                "document_id": c.document_id,
+                "page_number": c.page_number,
+                "chunk_index": c.chunk_index,
+                "text_content": c.text_content,
+                "language": c.language,
+                "script_type": c.script_type,
+                "ocr_applied": c.ocr_applied,
+                "provenance_json": c.provenance_json
+            } for c in db_chunks
+        ]
+
+    return LegalDocumentRAGEngine.query_document(
+        query=payload.query,
+        chunks=chunks,
+        filename=filename,
+        top_k=payload.top_k or 4
+    )
+
+

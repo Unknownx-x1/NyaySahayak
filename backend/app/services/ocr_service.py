@@ -9,7 +9,7 @@ Handles scanned legal filings:
 
 import io
 from typing import Dict, Any, Tuple
-import fitz  # PyMuPDF
+import pymupdf as fitz  # PyMuPDF
 
 try:
     import pytesseract

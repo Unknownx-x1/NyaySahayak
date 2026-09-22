@@ -1,5 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Scale, FileText, Layers, Sparkles, Home, LayoutDashboard, ArrowLeft, Swords } from 'lucide-react';
+import { 
+  ShieldCheck, 
+  Scale, 
+  FileText, 
+  Layers, 
+  Sparkles, 
+  Home, 
+  Swords, 
+  Database, 
+  CheckCircle2, 
+  ChevronRight,
+  BookOpen,
+  Clock,
+  Briefcase
+} from 'lucide-react';
 import { CaseUpload } from './components/CaseUpload';
 import { DocumentViewer } from './components/DocumentViewer';
 import { CitationBadge } from './components/CitationBadge';
@@ -19,11 +33,13 @@ interface CitationReport {
   trace_check: { passed: boolean; details: string };
 }
 
+export type TabMode = 'documents' | 'case_graph' | 'simulation' | 'verification' | 'corpus';
+
 export default function App() {
   const [activeCaseId, setActiveCaseId] = useState<string>('case_demo_001');
   const [documents, setDocuments] = useState<any[]>([]);
   const [selectedDoc, setSelectedDoc] = useState<any | null>(null);
-  const [activeRightTab, setActiveRightTab] = useState<'document' | 'case_graph' | 'simulation'>('document');
+  const [activeTab, setActiveTab] = useState<TabMode>('documents');
   
   // Phase 2 Case Graph State
   const [caseGraph, setCaseGraph] = useState<CaseGraph | null>(null);
@@ -66,7 +82,6 @@ export default function App() {
       const res = await fetch(`/api/case-graph/generate/${activeCaseId}`, { method: 'POST' });
       const data = await res.json();
       setCaseGraph(data);
-      setActiveRightTab('case_graph');
     } catch (err) {
       console.error('Failed to generate Case Graph:', err);
     } finally {
@@ -98,117 +113,317 @@ export default function App() {
     }
   };
 
-  // Render Case Intelligence Application Workspace
   return (
     <div className="app-container">
-      {/* Header with Navigation Back to Landing Page */}
+      {/* Top Header with Navigation Tabs */}
       <header className="header">
         <div className="logo-group">
           <div className="logo-badge">NYAY</div>
           <div>
-            <div className="logo-title">NyaySahayak Workspace</div>
-            <div className="subtitle">Verified Multi-Agent AI for Courtroom Preparation</div>
+            <div className="logo-title">NyaySahayak</div>
+            <div className="subtitle">Verified Multi-Agent Legal Intelligence</div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        {/* Primary Navigation Tabs */}
+        <nav className="nav-tabs-bar" aria-label="Main Navigation">
+          <button 
+            className={`nav-tab-btn ${activeTab === 'documents' ? 'active' : ''}`}
+            onClick={() => setActiveTab('documents')}
+          >
+            <FileText size={15} />
+            <span>Documents & Ingestion</span>
+            {documents.length > 0 && <span className="nav-tab-badge">{documents.length}</span>}
+          </button>
+
+          <button 
+            className={`nav-tab-btn ${activeTab === 'case_graph' ? 'active' : ''}`}
+            onClick={() => setActiveTab('case_graph')}
+          >
+            <Layers size={15} />
+            <span>Case Graph</span>
+            {caseGraph?.facts && <span className="nav-tab-badge">{caseGraph.facts.length} facts</span>}
+          </button>
+
+          <button 
+            className={`nav-tab-btn ${activeTab === 'simulation' ? 'active' : ''}`}
+            onClick={() => setActiveTab('simulation')}
+          >
+            <Swords size={15} />
+            <span>Courtroom Arena</span>
+          </button>
+
+          <button 
+            className={`nav-tab-btn ${activeTab === 'verification' ? 'active' : ''}`}
+            onClick={() => setActiveTab('verification')}
+          >
+            <ShieldCheck size={15} />
+            <span>Citation Lab</span>
+          </button>
+
+          <button 
+            className={`nav-tab-btn ${activeTab === 'corpus' ? 'active' : ''}`}
+            onClick={() => setActiveTab('corpus')}
+          >
+            <Database size={15} />
+            <span>Legal Corpus</span>
+          </button>
+        </nav>
+
+        {/* Right Header Actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <button 
+            className="btn btn-primary"
+            onClick={handleGenerateCaseGraph}
+            disabled={compilingGraph}
+            style={{ fontSize: '0.8rem', padding: '0.45rem 0.9rem' }}
+          >
+            <Sparkles size={14} />
+            <span>{compilingGraph ? 'Compiling Graph...' : 'Compile Graph'}</span>
+          </button>
+
           <a
             href="http://127.0.0.1:8080"
             className="btn btn-ghost"
-            style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', textDecoration: 'none' }}
+            style={{ fontSize: '0.8rem', padding: '0.45rem 0.85rem' }}
           >
-            <Home size={14} /> Back to Landing Page
+            <Home size={14} />
+            <span>Landing</span>
           </a>
-
-          <span className="provenance-tag">
-            <Scale size={12} style={{ display: 'inline', marginRight: '4px' }} />
-            Phase 2 Case Graph Active
-          </span>
         </div>
       </header>
 
-      {/* Main Workspace */}
+      {/* Main Content Area */}
       <main className="main-content">
-        {/* Phase Banner */}
+        {/* Context Status Banner */}
         <div className="phase-banner">
           <div>
-            <span className="phase-tag">Phase 2 — Weeks 6 to 10 Active</span>
-            <h2 style={{ fontSize: '1.1rem', marginTop: '0.2rem' }}>
-              Case Intelligence & Master Case Graph Context
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+              <span className="phase-tag">Active Workspace</span>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Case #{activeCaseId.slice(0, 8)}</span>
+            </div>
+            <h2 style={{ fontSize: '1.15rem', marginTop: '0.2rem' }}>
+              State of Kerala v. Constitutional Amendments
             </h2>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-              Single Versioned Legal Context: Extracting Facts, Chronological Timeline, Evidence Maps, and Legal Issues into a unified Case Graph.
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+              Supreme Court of India • WP(C) 135/1973 • Single Versioned Legal Context Engine
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button className="btn btn-primary" onClick={handleGenerateCaseGraph} disabled={compilingGraph}>
-              <Sparkles size={16} /> {compilingGraph ? 'Compiling Graph...' : 'Generate Case Graph'}
-            </button>
-            <button className="btn" onClick={handleRunVerification} disabled={verifying}>
-              <ShieldCheck size={16} /> Run Citation Check
-            </button>
+
+          {/* Quick Metrics Bar */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.4rem', 
+              padding: '0.35rem 0.75rem', 
+              borderRadius: 'var(--radius-sm)', 
+              background: 'rgba(255,255,255,0.04)', 
+              border: '1px solid var(--border-color)',
+              fontSize: '0.78rem' 
+            }}>
+              <FileText size={14} style={{ color: 'var(--text-muted)' }} />
+              <span><strong>{documents.length}</strong> Document(s)</span>
+            </div>
+
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.4rem', 
+              padding: '0.35rem 0.75rem', 
+              borderRadius: 'var(--radius-sm)', 
+              background: 'rgba(255,255,255,0.04)', 
+              border: '1px solid var(--border-color)',
+              fontSize: '0.78rem' 
+            }}>
+              <Layers size={14} style={{ color: caseGraph ? 'var(--status-verified)' : 'var(--text-muted)' }} />
+              <span><strong>{caseGraph?.facts.length || 0}</strong> Facts Mapped</span>
+            </div>
+
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.4rem', 
+              padding: '0.35rem 0.75rem', 
+              borderRadius: 'var(--radius-sm)', 
+              background: 'rgba(255,255,255,0.04)', 
+              border: '1px solid var(--border-color)',
+              fontSize: '0.78rem' 
+            }}>
+              <Clock size={14} style={{ color: 'var(--text-muted)' }} />
+              <span><strong>{caseGraph?.timeline.length || 0}</strong> Timeline Events</span>
+            </div>
+
+            <span className="provenance-tag">
+              <CheckCircle2 size={12} style={{ color: 'var(--status-verified)' }} />
+              Gate G1 OCR Active
+            </span>
           </div>
         </div>
 
-        {/* Workspace Layout */}
-        <div className="two-column-grid">
-          {/* Left Column: Upload & Citation Verification Playground */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <CaseUpload caseId={activeCaseId} onUploadSuccess={handleUploadSuccess} />
+        {/* View 1: Documents & Ingestion */}
+        {activeTab === 'documents' && (
+          <div className="layout-documents">
+            {/* Left Column: Upload Card + Uploaded Files List */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <CaseUpload caseId={activeCaseId} onUploadSuccess={handleUploadSuccess} />
 
-            {/* Citation Tester Card */}
+              {/* Uploaded Documents Drawer */}
+              <div className="card">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                  <h4 style={{ fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <BookOpen size={16} /> Uploaded Filings ({documents.length})
+                  </h4>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Page-Preserved</span>
+                </div>
+
+                {documents.length === 0 ? (
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center', padding: '1.5rem 0' }}>
+                    No case documents uploaded yet. Upload a PDF, DOCX, or TXT above to begin extraction.
+                  </p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '340px', overflowY: 'auto' }}>
+                    {documents.map((doc, idx) => (
+                      <div
+                        key={doc.id || idx}
+                        onClick={() => setSelectedDoc(doc)}
+                        style={{
+                          padding: '0.75rem',
+                          borderRadius: 'var(--radius-sm)',
+                          background: selectedDoc?.id === doc.id ? 'rgba(255,255,255,0.1)' : 'var(--bg-secondary)',
+                          border: selectedDoc?.id === doc.id ? '1px solid #ffffff' : '1px solid var(--border-color)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <div style={{ overflow: 'hidden' }}>
+                          <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                            {doc.filename}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                            {doc.page_count} page(s) • {doc.chunks?.length || 0} chunks • {doc.detected_languages?.toUpperCase()}
+                          </div>
+                        </div>
+                        <ChevronRight size={16} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right Column: Full Document Viewer */}
+            <div style={{ minHeight: '620px' }}>
+              <DocumentViewer document={selectedDoc} />
+            </div>
+          </div>
+        )}
+
+        {/* View 2: Master Case Graph Dashboard */}
+        {activeTab === 'case_graph' && (
+          <div className="layout-full">
+            <CaseGraphDashboard
+              caseGraph={caseGraph}
+              onGenerateGraph={handleGenerateCaseGraph}
+              loading={compilingGraph}
+              onUpdateCaseGraph={(updated) => setCaseGraph(updated)}
+            />
+          </div>
+        )}
+
+        {/* View 3: Courtroom Sparring Arena */}
+        {activeTab === 'simulation' && (
+          <div className="layout-full">
+            <CourtroomSimulation caseId={activeCaseId} />
+          </div>
+        )}
+
+        {/* View 4: Citation Verification Lab */}
+        {activeTab === 'verification' && (
+          <div className="layout-verification">
+            {/* Left Column: Citation Input Form */}
             <div className="card">
               <h3 className="card-title">
-                <ShieldCheck size={18} style={{ color: '#ffffff' }} /> 6-Check Citation Verification Tester
+                <ShieldCheck size={18} style={{ color: '#ffffff' }} /> 6-Check Citation Protocol Lab
               </h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: '1rem' }}>
-                Test legal citations against the 6 mandatory checks (*Existence, Identity, Source, Quotation, Proposition, Trace*).
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: '1.25rem' }}>
+                Verify legal propositions against the 6 strict integrity gates: <em>Existence, Identity, Source, Quotation, Proposition, Trace</em>.
               </p>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>Legal Citation</label>
+                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>
+                    Legal Citation
+                  </label>
                   <input
                     type="text"
                     className="form-input"
                     value={testCitation}
                     onChange={(e) => setTestCitation(e.target.value)}
+                    placeholder="e.g. Kesavananda Bharati v. State of Kerala, (1973) 4 SCC 225"
                   />
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>Quoted Argument Text</label>
+                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>
+                    Quoted Proposition / Claim
+                  </label>
                   <input
                     type="text"
                     className="form-input"
                     value={testQuote}
                     onChange={(e) => setTestQuote(e.target.value)}
+                    placeholder="e.g. Basic structure of the Constitution cannot be amended."
                   />
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>Retrieved Source Passage</label>
+                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>
+                    Retrieved Source Authority Passage
+                  </label>
                   <textarea
-                    rows={3}
+                    rows={4}
                     className="form-textarea"
                     value={testSource}
                     onChange={(e) => setTestSource(e.target.value)}
+                    placeholder="Exact excerpt retrieved from official authority..."
                   />
                 </div>
 
-                <button className="btn btn-primary" onClick={handleRunVerification} disabled={verifying} style={{ marginTop: '0.5rem' }}>
-                  {verifying ? 'Running 6 Verification Checks...' : 'Verify Citation'}
+                <button 
+                  className="btn btn-primary" 
+                  onClick={handleRunVerification} 
+                  disabled={verifying}
+                  style={{ marginTop: '0.5rem', width: '100%' }}
+                >
+                  <ShieldCheck size={16} />
+                  <span>{verifying ? 'Verifying Across 6 Checks...' : 'Run 6-Check Verification Protocol'}</span>
                 </button>
               </div>
+            </div>
 
-              {/* Verification Report Display */}
-              {verificationReport && (
-                <div className="verification-panel">
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--border-color)' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Verification Result:</span>
-                    <CitationBadge status={verificationReport.overall_status} />
-                  </div>
+            {/* Right Column: Verification Result Report */}
+            <div className="card">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-color)', marginBottom: '1rem' }}>
+                <h3 className="card-title" style={{ margin: 0 }}>
+                  Verification Audit Certificate
+                </h3>
+                {verificationReport && <CitationBadge status={verificationReport.overall_status} />}
+              </div>
 
+              {!verificationReport ? (
+                <div style={{ textAlign: 'center', padding: '3.5rem 1.5rem', color: 'var(--text-muted)' }}>
+                  <ShieldCheck size={40} style={{ marginBottom: '1rem', opacity: 0.4 }} />
+                  <h4 style={{ color: 'var(--text-secondary)' }}>No Verification Executed Yet</h4>
+                  <p style={{ fontSize: '0.84rem', marginTop: '0.25rem' }}>
+                    Configure the citation parameters on the left and trigger the protocol to inspect the full 6-gate audit trail.
+                  </p>
+                </div>
+              ) : (
+                <div className="verification-panel" style={{ marginTop: 0 }}>
                   <div className="check-item">
                     <div>
                       <div className="check-title">1. Existence Check</div>
@@ -272,51 +487,14 @@ export default function App() {
               )}
             </div>
           </div>
+        )}
 
-          {/* Right Column: Dynamic View Switcher (Document Viewer vs Master Case Graph Dashboard vs Courtroom Arena) */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', flexWrap: 'wrap' }}>
-              <button
-                className={`btn ${activeRightTab === 'document' ? 'btn-primary' : ''}`}
-                onClick={() => setActiveRightTab('document')}
-                style={{ fontSize: '0.8rem' }}
-              >
-                <FileText size={14} /> Page-Preserved Document Viewer
-              </button>
-              <button
-                className={`btn ${activeRightTab === 'case_graph' ? 'btn-primary' : ''}`}
-                onClick={() => setActiveRightTab('case_graph')}
-                style={{ fontSize: '0.8rem' }}
-              >
-                <Layers size={14} /> Master Case Graph Dashboard
-              </button>
-              <button
-                className={`btn ${activeRightTab === 'simulation' ? 'btn-primary' : ''}`}
-                onClick={() => setActiveRightTab('simulation')}
-                style={{ fontSize: '0.8rem' }}
-              >
-                <Swords size={14} /> Multi-Agent Courtroom Arena
-              </button>
-            </div>
-
-            {activeRightTab === 'document' && (
-              <DocumentViewer document={selectedDoc} />
-            )}
-            {activeRightTab === 'case_graph' && (
-              <CaseGraphDashboard
-                caseGraph={caseGraph}
-                onGenerateGraph={handleGenerateCaseGraph}
-                loading={compilingGraph}
-              />
-            )}
-            {activeRightTab === 'simulation' && (
-              <CourtroomSimulation caseId={activeCaseId} />
-            )}
+        {/* View 5: Legal Corpus Whitelist */}
+        {activeTab === 'corpus' && (
+          <div className="layout-full">
+            <CorpusWhitelistView />
           </div>
-        </div>
-
-        {/* Whitelisted Legal Authorities Footer Section */}
-        <CorpusWhitelistView />
+        )}
       </main>
     </div>
   );
