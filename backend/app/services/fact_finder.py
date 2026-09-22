@@ -240,7 +240,7 @@ class FactFinderAgent:
                         continue
 
                     # Must contain standard English/Hindi words and at least one verb-like structure
-                    if not re.search(r'\b(?:is|was|were|are|filed|held|ordered|enacted|challenged|stated|dated|contended|claimed|deposed|submitted|observed)\b', sent, re.IGNORECASE):
+                    if not re.search(r'\b(?:is|was|were|are|filed|held|ordered|enacted|challenged|stated|dated|contended|claimed|deposed|submitted|observed|denies|disputes|asserts|asserted|pleaded|argued)\b', sent, re.IGNORECASE):
                         # If no obvious verb, skip unless it contains a statutory reference
                         if not re.search(r'\b(?:article|section|act|constitution|clause)\b', sent, re.IGNORECASE):
                             continue
