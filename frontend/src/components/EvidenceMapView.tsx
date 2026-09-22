@@ -10,18 +10,34 @@ import {
   HelpCircle,
   Scale,
   ShieldAlert,
-  CheckCircle2
+  CheckCircle2,
+  FileQuestion,
+  Zap,
+  Bookmark,
+  BookOpen,
+  Gavel
 } from 'lucide-react';
 
 export interface EvidenceItem {
   evidence_id: string;
   title: string;
-  evidence_type: string;
+  evidence_type: 'CLAIM' | 'FACT' | 'EXHIBIT' | 'AFFIDAVIT' | 'JUDGMENT' | 'STATUTE' | 'PROCEDURAL_RECORD' | 'DOCUMENT_METADATA' | string;
   claim_supported: string;
-  strength: 'STRONG' | 'MODERATE' | 'WEAK' | 'MISSING' | string;
+  claimed_strength?: 'STRONG' | 'MODERATE' | 'WEAK' | 'MISSING' | 'UNKNOWN' | string;
+  strength?: string;
+  verification_status?: 'VERIFIED' | 'CLAIMED' | 'UNVERIFIED' | 'CONTESTED' | 'MISSING' | string;
+  exhibit_id?: string;
+  claimed_by?: string;
+  basis?: string;
+  adversarial_challenge?: string;
+  vulnerability_note?: string;
+  missing_evidence?: boolean;
+  conflict?: boolean;
+  conflict_type?: string;
+  conflict_positions?: string[];
+  related_evidence_ids?: string[];
   notes?: string;
   admissibility_status?: string;
-  vulnerability_note?: string;
   document_id: string;
   page_number: number;
   text_span: string;
@@ -65,15 +81,55 @@ export const EvidenceMapView: React.FC<EvidenceMapViewProps> = ({ evidenceMap })
     }
   };
 
-  const getStrengthBadgeClass = (strength: string) => {
+  const getStrengthBadgeClass = (strength?: string) => {
     switch (strength?.toUpperCase()) {
       case 'STRONG':
         return 'badge-VERIFIED';
       case 'WEAK':
       case 'MISSING':
         return 'badge-CONTESTED';
+      case 'UNKNOWN':
+        return 'badge-PARTIAL';
       default:
         return 'badge-PARTIAL';
+    }
+  };
+
+  const getVerificationBadge = (status?: string) => {
+    const s = status?.toUpperCase() || 'CLAIMED';
+    switch (s) {
+      case 'VERIFIED':
+        return { label: 'VERIFIED', bg: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)' };
+      case 'CONTESTED':
+        return { label: 'CONTESTED', bg: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)' };
+      case 'MISSING':
+        return { label: 'MISSING RECORD', bg: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)' };
+      case 'UNVERIFIED':
+        return { label: 'UNVERIFIED', bg: 'rgba(148, 163, 184, 0.15)', color: '#94a3b8', border: '1px solid rgba(148, 163, 184, 0.3)' };
+      default:
+        return { label: 'CLAIMED (Not Independently Verified)', bg: 'rgba(99, 102, 241, 0.15)', color: '#a5b4fc', border: '1px solid rgba(99, 102, 241, 0.3)' };
+    }
+  };
+
+  const getTypeStyle = (type: string) => {
+    const t = type.toUpperCase();
+    switch (t) {
+      case 'EXHIBIT':
+        return { bg: 'rgba(147, 51, 234, 0.18)', color: '#c084fc', border: '1px solid rgba(147, 51, 234, 0.35)', icon: <Bookmark size={12} /> };
+      case 'FACT':
+        return { bg: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.3)', icon: <FileText size={12} /> };
+      case 'CLAIM':
+        return { bg: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.3)', icon: <HelpCircle size={12} /> };
+      case 'JUDGMENT':
+        return { bg: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)', icon: <Gavel size={12} /> };
+      case 'STATUTE':
+        return { bg: 'rgba(251, 191, 36, 0.15)', color: '#fbbf24', border: '1px solid rgba(251, 191, 36, 0.3)', icon: <Scale size={12} /> };
+      case 'PROCEDURAL_RECORD':
+        return { bg: 'rgba(148, 163, 184, 0.15)', color: '#cbd5e1', border: '1px solid rgba(148, 163, 184, 0.3)', icon: <BookOpen size={12} /> };
+      case 'AFFIDAVIT':
+        return { bg: 'rgba(236, 72, 153, 0.15)', color: '#f472b6', border: '1px solid rgba(236, 72, 153, 0.3)', icon: <FileCheck size={12} /> };
+      default:
+        return { bg: 'var(--bg-tertiary)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', icon: <FileText size={12} /> };
     }
   };
 
@@ -95,12 +151,13 @@ export const EvidenceMapView: React.FC<EvidenceMapViewProps> = ({ evidenceMap })
           <div style={{ display: 'flex', gap: '0.65rem' }}>
             <HelpCircle size={18} style={{ color: '#818cf8', marginTop: '2px', flexShrink: 0 }} />
             <div style={{ fontSize: '0.82rem', lineHeight: '1.45', color: 'var(--text-secondary)' }}>
-              <strong style={{ color: '#ffffff' }}>What does the Evidence Map represent?</strong>
+              <strong style={{ color: '#ffffff' }}>What does the Evidentiary Graph represent?</strong>
               <div style={{ marginTop: '0.2rem' }}>
-                In Indian courtroom litigation, every factual averment must be substantiated by admissible documentary exhibits or affidavits under the 
-                <strong> Indian Evidence Act, 1872 / Bharatiya Sakshya Adhiniyam, 2023</strong>.
-                This view links each factual claim to specific case exhibits, evaluates legal admissibility strength, and pinpoints vulnerabilities that opposing counsel will attack in cross-examination.
-                <span style={{ color: '#a5b4fc', marginLeft: '0.35rem' }}>Click any card below to inspect full evidence details in the Big Tab.</span>
+                Under the <strong>Indian Evidence Act / Bharatiya Sakshya Adhiniyam</strong>, court proceedings strictly distinguish between 
+                <em> Pleading Claims</em>, <em>Factual Milestones</em>, and <em>Admissible Exhibits</em>.
+                This engine separates <strong>Evidence Type</strong> from <strong>Claimed Strength</strong> and <strong>Verification Status</strong>.
+                Missing documents and contested hearing claims are prominently flagged for cross-examination readiness.
+                <span style={{ color: '#a5b4fc', marginLeft: '0.35rem' }}>Click any card to inspect full legal basis and cross-examination angles.</span>
               </div>
             </div>
           </div>
@@ -121,7 +178,7 @@ export const EvidenceMapView: React.FC<EvidenceMapViewProps> = ({ evidenceMap })
             <FileCheck size={18} style={{ color: '#ffffff' }} /> Evidentiary Graph & Exhibits ({evidenceMap.length} Items)
           </h3>
           <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
-            Audited against Indian Evidence Act standards & adversarial challenge thresholds
+            Categorized by Evidence Type • Evaluated for Claimed Strength • Audited for Missing Documents & Contradictions
           </span>
         </div>
         <span className="provenance-tag">
@@ -129,10 +186,14 @@ export const EvidenceMapView: React.FC<EvidenceMapViewProps> = ({ evidenceMap })
         </span>
       </div>
 
-      {/* Grid of Small Evidence Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))', gap: '1rem' }}>
+      {/* Grid of Evidence Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(330px, 1fr))', gap: '1rem' }}>
         {evidenceMap.map((item) => {
           const isSelected = selectedEvidence?.evidence_id === item.evidence_id;
+          const strengthVal = item.claimed_strength || item.strength || 'MODERATE';
+          const verBadge = getVerificationBadge(item.verification_status);
+          const typeStyle = getTypeStyle(item.evidence_type);
+          const challenge = item.adversarial_challenge || item.vulnerability_note;
 
           return (
             <div 
@@ -140,15 +201,15 @@ export const EvidenceMapView: React.FC<EvidenceMapViewProps> = ({ evidenceMap })
               onClick={() => setSelectedEvidence(item)}
               style={{ 
                 backgroundColor: isSelected ? 'rgba(99, 102, 241, 0.12)' : 'var(--bg-secondary)', 
-                border: isSelected ? '1.5px solid #818cf8' : '1px solid var(--border-color)', 
+                border: isSelected ? '1.5px solid #818cf8' : item.missing_evidence ? '1px solid rgba(245, 158, 11, 0.4)' : item.conflict ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid var(--border-color)', 
                 borderRadius: 'var(--radius-md)', 
-                padding: '1rem',
+                padding: '1.1rem',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
-                boxShadow: isSelected ? '0 0 12px rgba(99, 102, 241, 0.2)' : 'none'
+                boxShadow: isSelected ? '0 0 14px rgba(99, 102, 241, 0.25)' : 'none'
               }}
               onMouseEnter={(e) => {
                 if (!isSelected) {
@@ -158,61 +219,150 @@ export const EvidenceMapView: React.FC<EvidenceMapViewProps> = ({ evidenceMap })
               }}
               onMouseLeave={(e) => {
                 if (!isSelected) {
-                  e.currentTarget.style.borderColor = 'var(--border-color)';
+                  e.currentTarget.style.borderColor = item.missing_evidence ? 'rgba(245, 158, 11, 0.4)' : item.conflict ? 'rgba(239, 68, 68, 0.4)' : 'var(--border-color)';
                   e.currentTarget.style.transform = 'none';
                 }
               }}
             >
               <div>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                  <span style={{ 
-                    fontSize: '0.88rem', 
-                    fontWeight: 600, 
-                    color: '#ffffff',
-                    lineHeight: '1.3'
-                  }}>
-                    {item.title}
-                  </span>
-                  <span className={`badge ${getStrengthBadgeClass(item.strength)}`} style={{ fontSize: '0.65rem', flexShrink: 0 }}>
-                    {item.strength}
+                {/* Top Badges Row */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.4rem', marginBottom: '0.6rem', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                    <span style={{ 
+                      display: 'inline-flex', 
+                      alignItems: 'center', 
+                      gap: '0.25rem', 
+                      fontSize: '0.68rem', 
+                      fontWeight: 600, 
+                      padding: '0.2rem 0.45rem', 
+                      borderRadius: '4px',
+                      backgroundColor: typeStyle.bg,
+                      color: typeStyle.color,
+                      border: typeStyle.border
+                    }}>
+                      {typeStyle.icon}
+                      {item.evidence_type.toUpperCase()}
+                    </span>
+                    {item.exhibit_id && (
+                      <span style={{ 
+                        fontSize: '0.68rem', 
+                        fontWeight: 700, 
+                        padding: '0.2rem 0.45rem', 
+                        borderRadius: '4px',
+                        backgroundColor: 'rgba(217, 70, 239, 0.15)',
+                        color: '#f0abfc',
+                        border: '1px solid rgba(217, 70, 239, 0.35)'
+                      }}>
+                        Exhibit {item.exhibit_id}
+                      </span>
+                    )}
+                  </div>
+                  <span className={`badge ${getStrengthBadgeClass(strengthVal)}`} style={{ fontSize: '0.65rem', flexShrink: 0 }}>
+                    Claimed Strength: {strengthVal}
                   </span>
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.65rem', flexWrap: 'wrap' }}>
-                  <span className="provenance-tag" style={{ textTransform: 'uppercase', fontSize: '0.68rem', backgroundColor: 'var(--bg-tertiary)' }}>
-                    {item.evidence_type}
-                  </span>
-                  <span className="provenance-tag" style={{ fontSize: '0.68rem' }}>
-                    Page {item.page_number}
-                  </span>
-                </div>
+                {/* Title */}
+                <h4 style={{ 
+                  fontSize: '0.92rem', 
+                  fontWeight: 600, 
+                  color: '#ffffff',
+                  lineHeight: '1.35',
+                  margin: '0 0 0.5rem 0'
+                }}>
+                  {item.title}
+                </h4>
 
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.65rem', lineHeight: '1.45' }}>
-                  <strong style={{ color: 'var(--text-primary)' }}>Claim: </strong>
-                  {item.claim_supported.length > 110 ? `${item.claim_supported.slice(0, 110)}...` : item.claim_supported}
-                </div>
-
-                {item.vulnerability_note && (
+                {/* Missing / Conflict Banners if active */}
+                {item.missing_evidence && (
                   <div style={{ 
-                    fontSize: '0.73rem', 
-                    color: '#fca5a5', 
-                    backgroundColor: 'rgba(239, 68, 68, 0.08)',
-                    border: '1px solid rgba(239, 68, 68, 0.2)',
-                    borderRadius: '4px',
-                    padding: '0.35rem 0.5rem',
-                    marginBottom: '0.65rem',
+                    fontSize: '0.72rem', 
+                    color: '#fbbf24', 
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)', 
+                    border: '1px solid rgba(245, 158, 11, 0.3)', 
+                    borderRadius: '4px', 
+                    padding: '0.3rem 0.5rem', 
+                    marginBottom: '0.55rem',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.35rem'
                   }}>
-                    <AlertTriangle size={12} style={{ flexShrink: 0 }} />
-                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      Adversary Angle: {item.vulnerability_note}
-                    </span>
+                    <FileQuestion size={13} style={{ flexShrink: 0 }} />
+                    <span><strong>Missing Document:</strong> Referenced in petition, but underlying record not produced</span>
+                  </div>
+                )}
+
+                {item.conflict && (
+                  <div style={{ 
+                    fontSize: '0.72rem', 
+                    color: '#f87171', 
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)', 
+                    border: '1px solid rgba(239, 68, 68, 0.3)', 
+                    borderRadius: '4px', 
+                    padding: '0.3rem 0.5rem', 
+                    marginBottom: '0.55rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem'
+                  }}>
+                    <Zap size={13} style={{ flexShrink: 0 }} />
+                    <span><strong>Contested Matter:</strong> Direct contradiction between Petitioner and Respondent averments</span>
+                  </div>
+                )}
+
+                {/* Verification Status Pill */}
+                <div style={{ marginBottom: '0.65rem' }}>
+                  <span style={{ 
+                    fontSize: '0.68rem', 
+                    padding: '0.2rem 0.5rem', 
+                    borderRadius: '4px',
+                    backgroundColor: verBadge.bg,
+                    color: verBadge.color,
+                    border: verBadge.border,
+                    display: 'inline-block'
+                  }}>
+                    Verification: {verBadge.label}
+                  </span>
+                </div>
+
+                {/* Substantive Claim */}
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.65rem', lineHeight: '1.45' }}>
+                  <strong style={{ color: 'var(--text-primary)' }}>Claim: </strong>
+                  {item.claim_supported.length > 130 ? `${item.claim_supported.slice(0, 130)}...` : item.claim_supported}
+                </div>
+
+                {/* Basis if available */}
+                {item.basis && (
+                  <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '0.65rem', fontStyle: 'italic' }}>
+                    <strong style={{ fontStyle: 'normal', color: 'var(--text-secondary)' }}>Basis: </strong>
+                    {item.basis}
+                  </div>
+                )}
+
+                {/* Targeted Adversarial Challenge */}
+                {challenge && (
+                  <div style={{ 
+                    fontSize: '0.73rem', 
+                    color: '#fca5a5', 
+                    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                    border: '1px solid rgba(239, 68, 68, 0.22)',
+                    borderRadius: '4px',
+                    padding: '0.45rem 0.55rem',
+                    marginBottom: '0.65rem',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '0.4rem'
+                  }}>
+                    <AlertTriangle size={13} style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <div style={{ lineHeight: '1.4' }}>
+                      <strong style={{ color: '#f87171' }}>Targeted Challenge: </strong>
+                      {challenge}
+                    </div>
                   </div>
                 )}
               </div>
 
+              {/* Bottom Footer Info */}
               <div style={{ 
                 fontSize: '0.72rem', 
                 color: '#818cf8', 
@@ -222,9 +372,9 @@ export const EvidenceMapView: React.FC<EvidenceMapViewProps> = ({ evidenceMap })
                 alignItems: 'center', 
                 justifyContent: 'space-between' 
               }}>
-                <span>Doc: {item.document_id.slice(0, 8)}...</span>
+                <span>Page {item.page_number} • {item.claimed_by || 'Case Record'}</span>
                 <span style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                  Open Big Tab &rarr;
+                  Inspect in Big Tab &rarr;
                 </span>
               </div>
             </div>
@@ -240,8 +390,8 @@ export const EvidenceMapView: React.FC<EvidenceMapViewProps> = ({ evidenceMap })
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.75)',
-          backdropFilter: 'blur(5px)',
+          backgroundColor: 'rgba(0, 0, 0, 0.78)',
+          backdropFilter: 'blur(6px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -254,11 +404,11 @@ export const EvidenceMapView: React.FC<EvidenceMapViewProps> = ({ evidenceMap })
               border: '1px solid var(--border-color)',
               borderRadius: 'var(--radius-lg, 12px)',
               width: '100%',
-              maxWidth: '780px',
-              maxHeight: '90vh',
+              maxWidth: '820px',
+              maxHeight: '92vh',
               overflowY: 'auto',
-              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.6)',
-              padding: '1.75rem',
+              boxShadow: '0 24px 48px rgba(0, 0, 0, 0.7)',
+              padding: '1.85rem',
               display: 'flex',
               flexDirection: 'column',
               gap: '1.25rem'
@@ -268,22 +418,49 @@ export const EvidenceMapView: React.FC<EvidenceMapViewProps> = ({ evidenceMap })
             {/* Modal Header */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
-                  <span className="provenance-tag" style={{ textTransform: 'uppercase', backgroundColor: '#3730a3', color: '#c7d2fe' }}>
-                    {selectedEvidence.evidence_type}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                  <span style={{ 
+                    fontSize: '0.72rem', 
+                    fontWeight: 700, 
+                    padding: '0.25rem 0.55rem', 
+                    borderRadius: '4px',
+                    backgroundColor: getTypeStyle(selectedEvidence.evidence_type).bg,
+                    color: getTypeStyle(selectedEvidence.evidence_type).color,
+                    border: getTypeStyle(selectedEvidence.evidence_type).border
+                  }}>
+                    {selectedEvidence.evidence_type.toUpperCase()}
                   </span>
-                  <span className={`badge ${getStrengthBadgeClass(selectedEvidence.strength)}`}>
-                    {selectedEvidence.strength} EVIDENTIARY VALUE
+                  {selectedEvidence.exhibit_id && (
+                    <span style={{ 
+                      fontSize: '0.72rem', 
+                      fontWeight: 700, 
+                      padding: '0.25rem 0.55rem', 
+                      borderRadius: '4px',
+                      backgroundColor: 'rgba(217, 70, 239, 0.2)',
+                      color: '#f0abfc'
+                    }}>
+                      Exhibit {selectedEvidence.exhibit_id}
+                    </span>
+                  )}
+                  <span className={`badge ${getStrengthBadgeClass(selectedEvidence.claimed_strength || selectedEvidence.strength)}`}>
+                    Claimed Strength: {selectedEvidence.claimed_strength || selectedEvidence.strength || 'MODERATE'}
                   </span>
-                  <span className="provenance-tag">
-                    Page {selectedEvidence.page_number}
+                  <span style={{ 
+                    fontSize: '0.72rem', 
+                    padding: '0.25rem 0.55rem', 
+                    borderRadius: '4px',
+                    backgroundColor: getVerificationBadge(selectedEvidence.verification_status).bg,
+                    color: getVerificationBadge(selectedEvidence.verification_status).color,
+                    border: getVerificationBadge(selectedEvidence.verification_status).border
+                  }}>
+                    {getVerificationBadge(selectedEvidence.verification_status).label}
                   </span>
                 </div>
-                <h2 style={{ fontSize: '1.25rem', color: '#ffffff', margin: 0, fontWeight: 700 }}>
+                <h2 style={{ fontSize: '1.3rem', color: '#ffffff', margin: 0, fontWeight: 700 }}>
                   {selectedEvidence.title}
                 </h2>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.3rem' }}>
-                  Evidence ID: {selectedEvidence.evidence_id} • Source Document: {selectedEvidence.document_id}
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
+                  ID: {selectedEvidence.evidence_id} • Page {selectedEvidence.page_number} • Claimed By: {selectedEvidence.claimed_by || 'Case Record'}
                 </div>
               </div>
 
@@ -316,44 +493,82 @@ export const EvidenceMapView: React.FC<EvidenceMapViewProps> = ({ evidenceMap })
               </div>
             </div>
 
-            {/* Modal Body Sections */}
+            {/* Contradiction Breakdown Banner if in conflict */}
+            {selectedEvidence.conflict && selectedEvidence.conflict_positions && selectedEvidence.conflict_positions.length > 0 && (
+              <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 'var(--radius-md)', padding: '1rem 1.25rem' }}>
+                <h4 style={{ fontSize: '0.86rem', color: '#f87171', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Zap size={16} /> Disputed Evidentiary Positions (Factual Contradiction)
+                </h4>
+                <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.84rem', color: 'var(--text-primary)', lineHeight: '1.5' }}>
+                  {selectedEvidence.conflict_positions.map((pos, idx) => (
+                    <li key={idx} style={{ marginBottom: '0.25rem' }}>{pos}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Section 1: Substantive Claim Supported */}
             <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '1rem 1.25rem' }}>
               <h4 style={{ fontSize: '0.86rem', color: '#ffffff', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <CheckCircle2 size={16} style={{ color: '#10b981' }} /> Substantive Claim Proved for Court
+                <CheckCircle2 size={16} style={{ color: '#10b981' }} /> Substantive Claim Asserted
               </h4>
               <p style={{ fontSize: '0.88rem', color: 'var(--text-primary)', lineHeight: '1.5', margin: 0 }}>
                 {selectedEvidence.claim_supported}
               </p>
-            </div>
-
-            {/* Section 2: Admissibility Under Indian Evidence Act / BSA */}
-            <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '1rem 1.25rem' }}>
-              <h4 style={{ fontSize: '0.86rem', color: '#ffffff', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <Scale size={16} style={{ color: '#818cf8' }} /> Admissibility Assessment (Indian Evidence Act / BSA)
-              </h4>
-              <div style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-                {selectedEvidence.admissibility_status || (
-                  selectedEvidence.strength === 'STRONG'
-                    ? 'Admissible as Primary Public Record under Section 62 / 74 of the Indian Evidence Act (Bharatiya Sakshya Adhiniyam Section 57). Enjoys statutory presumption of genuineness.'
-                    : 'Secondary Evidence under Section 65 of the Indian Evidence Act. Requires proof of execution or non-availability of original to be read into evidence.'
-                )}
-              </div>
-              {selectedEvidence.notes && (
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.5rem', fontStyle: 'italic', borderTop: '1px solid var(--border-color)', paddingTop: '0.4rem' }}>
-                  Auditor Observations: {selectedEvidence.notes}
+              {selectedEvidence.basis && (
+                <div style={{ marginTop: '0.6rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-color)', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  <strong style={{ color: '#ffffff' }}>System Classification Basis: </strong>
+                  {selectedEvidence.basis}
                 </div>
               )}
             </div>
 
-            {/* Section 3: Exact Provenance Excerpt from Filing */}
+            {/* Section 2: Case-Specific Adversarial Cross-Examination Angles */}
+            <div style={{ 
+              backgroundColor: 'rgba(239, 68, 68, 0.06)', 
+              border: '1px solid rgba(239, 68, 68, 0.25)', 
+              borderRadius: 'var(--radius-md)', 
+              padding: '1.1rem 1.25rem' 
+            }}>
+              <h4 style={{ fontSize: '0.86rem', color: '#f87171', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <ShieldAlert size={16} /> Targeted Adversarial Inquiries (Opposing Counsel & Bench Scrutiny)
+              </h4>
+              <p style={{ fontSize: '0.87rem', color: '#fca5a5', lineHeight: '1.5', margin: 0, fontWeight: 500 }}>
+                "{selectedEvidence.adversarial_challenge || selectedEvidence.vulnerability_note}"
+              </p>
+              <div style={{ 
+                marginTop: '0.65rem', 
+                paddingTop: '0.5rem', 
+                borderTop: '1px dashed rgba(239, 68, 68, 0.2)', 
+                fontSize: '0.78rem', 
+                color: 'var(--text-secondary)' 
+              }}>
+                <strong style={{ color: '#ffffff' }}>Litigation Readiness Tip: </strong> 
+                Be prepared to produce contemporaneous certified transcripts or official records to satisfy judicial scrutiny.
+              </div>
+            </div>
+
+            {/* Section 3: Admissibility Under Indian Evidence Act / BSA */}
+            <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '1rem 1.25rem' }}>
+              <h4 style={{ fontSize: '0.86rem', color: '#ffffff', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Scale size={16} style={{ color: '#818cf8' }} /> Admissibility Framework (Indian Evidence Act / BSA)
+              </h4>
+              <div style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                {selectedEvidence.admissibility_status || (
+                  selectedEvidence.claimed_strength === 'STRONG'
+                    ? 'Admissible subject to Section 62/65 of the Indian Evidence Act (Bharatiya Sakshya Adhiniyam Section 57).'
+                    : 'Secondary Evidence; Requires proof of execution and availability under Section 65 condition.'
+                )}
+              </div>
+            </div>
+
+            {/* Section 4: Exact Provenance Excerpt */}
             <div style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '1rem 1.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                 <h4 style={{ fontSize: '0.86rem', color: '#ffffff', margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <FileText size={16} style={{ color: '#f59e0b' }} /> Direct Quoted Text Span in Case Paper
+                  <FileText size={16} style={{ color: '#f59e0b' }} /> Exact Quoted Text Span in Pleading Record
                 </h4>
-                <span className="provenance-tag">Verified on Page {selectedEvidence.page_number}</span>
+                <span className="provenance-tag">Page {selectedEvidence.page_number}</span>
               </div>
               <div style={{ 
                 fontSize: '0.84rem', 
@@ -366,33 +581,6 @@ export const EvidenceMapView: React.FC<EvidenceMapViewProps> = ({ evidenceMap })
                 lineHeight: '1.5'
               }}>
                 "{selectedEvidence.text_span || selectedEvidence.claim_supported}"
-              </div>
-            </div>
-
-            {/* Section 4: Adversarial Cross-Examination Angles */}
-            <div style={{ 
-              backgroundColor: 'rgba(239, 68, 68, 0.06)', 
-              border: '1px solid rgba(239, 68, 68, 0.25)', 
-              borderRadius: 'var(--radius-md)', 
-              padding: '1rem 1.25rem' 
-            }}>
-              <h4 style={{ fontSize: '0.86rem', color: '#f87171', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <ShieldAlert size={16} /> Adversarial Cross-Examination Angles (What Opposing Counsel Will Attack)
-              </h4>
-              <p style={{ fontSize: '0.85rem', color: '#fca5a5', lineHeight: '1.5', margin: 0 }}>
-                {selectedEvidence.vulnerability_note || (
-                  "Opposing counsel is likely to challenge the authenticity of this document by objecting to lack of certified translation, absence of proof of service, or contesting execution under Section 67."
-                )}
-              </p>
-              <div style={{ 
-                marginTop: '0.65rem', 
-                paddingTop: '0.5rem', 
-                borderTop: '1px dashed rgba(239, 68, 68, 0.2)', 
-                fontSize: '0.78rem', 
-                color: 'var(--text-secondary)' 
-              }}>
-                <strong style={{ color: '#ffffff' }}>Recommended Pre-Trial Safeguard: </strong> 
-                Ensure certified true copies and sworn affidavits of custody are placed on record before final arguments.
               </div>
             </div>
 

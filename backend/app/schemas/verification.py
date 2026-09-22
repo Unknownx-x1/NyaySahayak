@@ -37,6 +37,8 @@ class ProvenanceSpan(BaseModel):
     text_span: str
     language: str = "en"
     extraction_confidence: float = 1.0
+    checksum_sha256: Optional[str] = None
+    source_url: Optional[str] = None
 
 class CitationVerificationReport(BaseModel):
     citation_id: str

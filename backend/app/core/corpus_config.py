@@ -95,6 +95,19 @@ DEFAULT_WHITELIST_SOURCES: List[CorpusSource] = [
         official_url="https://egazette.gov.in",
         update_cadence="Daily",
         is_whitelisted=True
+    ),
+    CorpusSource(
+        id="ildc_supreme_court",
+        name="Indian Legal Documents Corpus (ILDC / Supreme Court of India)",
+        authority_type=LegalAuthorityType.SUPREME_COURT,
+        jurisdiction="India",
+        court_name="Supreme Court of India",
+        start_year=1950,
+        end_year=2021,
+        official_url="https://main.sci.gov.in",
+        update_cadence="Static",
+        is_whitelisted=True,
+        storage_type="corpus_only"
     )
 ]
 
