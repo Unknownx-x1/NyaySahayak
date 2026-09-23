@@ -45,6 +45,14 @@ interface SqlQueryResult {
 
 const PRESET_QUERIES = [
   {
+    label: '📊 Count Total Rows',
+    query: `SELECT COUNT(*) AS total_dataset_rows,\n       COUNT(DISTINCT case_title) AS total_authorities,\n       COUNT(DISTINCT court) AS distinct_courts\nFROM corpus_chunks;`,
+  },
+  {
+    label: 'Rows by Category',
+    query: `SELECT corpus_type, COUNT(*) AS row_count, COUNT(DISTINCT case_title) AS distinct_titles\nFROM corpus_chunks\nGROUP BY corpus_type;`,
+  },
+  {
     label: 'Top Landmarks',
     query: `SELECT case_title, citation_string, year, paragraph_number, text_span\nFROM corpus_chunks\nWHERE corpus_type = 'supreme_court_judgment'\nLIMIT 10;`,
   },

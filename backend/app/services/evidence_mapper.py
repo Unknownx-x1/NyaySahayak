@@ -235,6 +235,8 @@ class EvidenceMapper:
                 ev_type = EvidenceType.EXHIBIT
 
             str_raw = str(item.get("claimed_strength", item.get("strength", "MODERATE"))).upper()
+            if "certified copy" in claim.lower() or any("certified copy" in c.get("text_content", "").lower() for c in clean_chunks):
+                str_raw = "STRONG"
             try:
                 claimed_str = ClaimedStrength(str_raw)
             except ValueError:
@@ -414,7 +416,7 @@ class EvidenceMapper:
             desc = m.group(3).strip()
             title = f"{m.group(1)} {ex_id}: {desc}"
             
-            is_certified = "certified copy" in desc.lower() or "gazette" in desc.lower()
+            is_certified = "certified copy" in full_text.lower() or "gazette" in full_text.lower() or "certified" in desc.lower()
             claimed_str = ClaimedStrength.STRONG if is_certified else ClaimedStrength.MODERATE
             
             ev = EvidenceItem(

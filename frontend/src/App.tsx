@@ -8,11 +8,8 @@ import {
   Home, 
   Swords, 
   Database, 
-  CheckCircle2, 
   ChevronRight,
-  BookOpen,
-  Clock,
-  Briefcase
+  BookOpen
 } from 'lucide-react';
 import { CaseUpload } from './components/CaseUpload';
 import { DocumentViewer } from './components/DocumentViewer';
@@ -25,13 +22,38 @@ import { LandingPage } from './components/landing/LandingPage';
 interface CitationReport {
   citation_id: string;
   raw_citation: string;
-  overall_status: 'VERIFIED' | 'PARTIAL' | 'CONTESTED' | 'UNVERIFIED';
-  existence_check: { passed: boolean; details: string };
-  identity_check: { passed: boolean; details: string };
-  source_check: { passed: boolean; details: string };
-  quotation_check: { passed: boolean; details: string };
-  proposition_check: { passed: boolean; details: string };
-  trace_check: { passed: boolean; details: string };
+  extracted_case_name?: string;
+  extracted_court?: string;
+  extracted_year?: number;
+  extracted_statute?: string;
+  extracted_section?: string;
+  overall_status: 'VERIFIED' | 'PARTIAL' | 'CONTESTED' | 'UNVERIFIED' | 'NOT_FOUND';
+  existence_check: { passed: boolean; details: string; evidence_snippet?: string };
+  identity_check: { passed: boolean; details: string; evidence_snippet?: string };
+  source_check: { passed: boolean; details: string; evidence_snippet?: string; source_type?: string };
+  quotation_check: { passed: boolean; details: string; evidence_snippet?: string; match_type?: string };
+  proposition_check: { passed: boolean; details: string; evidence_snippet?: string };
+  trace_check: { passed: boolean; details: string; evidence_snippet?: string };
+  source_type?: string;
+  quotation_match_type?: string;
+  user_document_trace?: {
+    document_id?: string;
+    page_number?: number;
+    is_user_supplied: boolean;
+    details?: string;
+  } | null;
+  authoritative_legal_trace?: {
+    corpus_document_id?: string;
+    case_title?: string;
+    citation_string?: string;
+    court?: string;
+    paragraph_number?: number;
+    page_number?: number;
+    source_url?: string;
+    checksum_sha256?: string;
+    is_authoritative: boolean;
+    details?: string;
+  } | null;
 }
 
 export type TabMode = 'documents' | 'case_graph' | 'simulation' | 'verification' | 'corpus';
@@ -96,6 +118,26 @@ export default function App() {
     }
   };
 
+  const loadPreset = (type: 'A' | 'B' | 'C' | 'D') => {
+    if (type === 'A') {
+      setTestCitation('Sharma Infrastructure Ltd. v. Union of India, (2019) 12 SCC 847');
+      setTestQuote('Public interest constitutes a complete exception to the audi alteram partem rule.');
+      setTestSource('In situations of overriding public interest, audi alteram partem has no application whatsoever.');
+    } else if (type === 'B') {
+      setTestCitation('Whirlpool Corporation v. Registrar of Trade Marks, (1998) 8 SCC 1');
+      setTestQuote('High Courts are strictly barred under all circumstances from entertaining Article 226 petitions whenever statutory appeal lies.');
+      setTestSource('The power to issue prerogative writs under Article 226 of the Constitution is plenary in nature');
+    } else if (type === 'C') {
+      setTestCitation('Whirlpool Corporation v. Registrar of Trade Marks, (1998) 8 SCC 1');
+      setTestQuote('The power to issue prerogative writs under Article 226 of the Constitution is plenary in nature');
+      setTestSource('The power to issue prerogative writs under Article 226 of the Constitution is plenary in nature');
+    } else if (type === 'D') {
+      setTestCitation('Kesavananda Bharati v. State of Kerala, (1973) 4 SCC 225');
+      setTestQuote('Basic structure of the Constitution cannot be amended.');
+      setTestSource('The basic structure of the Constitution of India cannot be altered or damaged by constitutional amendment.');
+    }
+  };
+
   const handleRunVerification = async () => {
     setVerifying(true);
     try {
@@ -105,10 +147,11 @@ export default function App() {
         body: JSON.stringify({
           case_id: activeCaseId,
           citation_text: testCitation,
+          proposition_claim: testQuote,
           quoted_text: testQuote,
           source_passage: testSource,
-          document_id: selectedDoc?.id || 'doc_sc_1973',
-          page_number: 45
+          document_id: selectedDoc?.id || 'doc_user_input',
+          page_number: 14
         })
       });
       const data = await res.json();
@@ -237,71 +280,7 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="main-content">
-        {/* Context Status Banner */}
-        <div className="phase-banner">
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-              <span className="phase-tag">Active Workspace</span>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Case #{activeCaseId.slice(0, 8)}</span>
-            </div>
-            <h2 style={{ fontSize: '1.15rem', marginTop: '0.2rem' }}>
-              State of Kerala v. Constitutional Amendments
-            </h2>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-              Supreme Court of India • WP(C) 135/1973 • Single Versioned Legal Context Engine
-            </p>
-          </div>
 
-          {/* Quick Metrics Bar */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.4rem', 
-              padding: '0.35rem 0.75rem', 
-              borderRadius: 'var(--radius-sm)', 
-              background: 'rgba(255,255,255,0.04)', 
-              border: '1px solid var(--border-color)',
-              fontSize: '0.78rem' 
-            }}>
-              <FileText size={14} style={{ color: 'var(--text-muted)' }} />
-              <span><strong>{documents.length}</strong> Document(s)</span>
-            </div>
-
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.4rem', 
-              padding: '0.35rem 0.75rem', 
-              borderRadius: 'var(--radius-sm)', 
-              background: 'rgba(255,255,255,0.04)', 
-              border: '1px solid var(--border-color)',
-              fontSize: '0.78rem' 
-            }}>
-              <Layers size={14} style={{ color: caseGraph ? 'var(--status-verified)' : 'var(--text-muted)' }} />
-              <span><strong>{caseGraph?.facts.length || 0}</strong> Facts Mapped</span>
-            </div>
-
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.4rem', 
-              padding: '0.35rem 0.75rem', 
-              borderRadius: 'var(--radius-sm)', 
-              background: 'rgba(255,255,255,0.04)', 
-              border: '1px solid var(--border-color)',
-              fontSize: '0.78rem' 
-            }}>
-              <Clock size={14} style={{ color: 'var(--text-muted)' }} />
-              <span><strong>{caseGraph?.timeline.length || 0}</strong> Timeline Events</span>
-            </div>
-
-            <span className="provenance-tag">
-              <CheckCircle2 size={12} style={{ color: 'var(--status-verified)' }} />
-              Gate G1 OCR Active
-            </span>
-          </div>
-        </div>
 
         {/* View 1: Documents & Ingestion */}
         {activeTab === 'documents' && (
@@ -391,9 +370,54 @@ export default function App() {
               <h3 className="card-title">
                 <ShieldCheck size={18} style={{ color: '#ffffff' }} /> 6-Check Citation Protocol Lab
               </h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: '1.25rem' }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: '1rem' }}>
                 Verify legal propositions against the 6 strict integrity gates: <em>Existence, Identity, Source, Quotation, Proposition, Trace</em>.
               </p>
+
+              {/* Quick Test Presets */}
+              <div style={{ marginBottom: '1.1rem', padding: '0.65rem 0.8rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.4rem', fontWeight: 600 }}>
+                  Preconfigured Integrity Test Scenarios:
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => loadPreset('A')}
+                    className="btn"
+                    style={{ fontSize: '0.72rem', padding: '0.25rem 0.55rem', border: '1px solid rgba(239, 68, 68, 0.4)', color: '#fca5a5', background: 'rgba(239, 68, 68, 0.08)' }}
+                    title="Fabricated Citation: Sharma Infrastructure"
+                  >
+                    Test A (Fake Citation / Sharma Infra)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => loadPreset('B')}
+                    className="btn"
+                    style={{ fontSize: '0.72rem', padding: '0.25rem 0.55rem', border: '1px solid rgba(245, 158, 11, 0.4)', color: '#fcd34d', background: 'rgba(245, 158, 11, 0.08)' }}
+                    title="Real Citation + Contradictory Claim: Whirlpool"
+                  >
+                    Test B (Real Citation + Fake Claim)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => loadPreset('C')}
+                    className="btn"
+                    style={{ fontSize: '0.72rem', padding: '0.25rem 0.55rem', border: '1px solid rgba(16, 185, 129, 0.4)', color: '#6ee7b7', background: 'rgba(16, 185, 129, 0.08)' }}
+                    title="Real Citation + Supported Claim: Whirlpool"
+                  >
+                    Test C (Whirlpool Verified)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => loadPreset('D')}
+                    className="btn"
+                    style={{ fontSize: '0.72rem', padding: '0.25rem 0.55rem', border: '1px solid var(--border-color)', color: 'var(--text-primary)', background: 'var(--bg-tertiary)' }}
+                    title="Kesavananda Bharati (1973)"
+                  >
+                    Test D (Kesavananda Bharati)
+                  </button>
+                </div>
+              </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                 <div>
@@ -424,22 +448,25 @@ export default function App() {
 
                 <div>
                   <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>
-                    Retrieved Source Authority Passage
+                    User-Supplied Source Passage (Optional / Non-Authoritative)
                   </label>
                   <textarea
-                    rows={4}
+                    rows={3}
                     className="form-textarea"
                     value={testSource}
                     onChange={(e) => setTestSource(e.target.value)}
-                    placeholder="Exact excerpt retrieved from official authority..."
+                    placeholder="User-provided excerpt from pleading or upload..."
                   />
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem', display: 'block' }}>
+                    Note: User-supplied passages cannot establish authoritative source verification.
+                  </span>
                 </div>
 
                 <button 
                   className="btn btn-primary" 
                   onClick={handleRunVerification} 
                   disabled={verifying}
-                  style={{ marginTop: '0.5rem', width: '100%' }}
+                  style={{ marginTop: '0.3rem', width: '100%' }}
                 >
                   <ShieldCheck size={16} />
                   <span>{verifying ? 'Verifying Across 6 Checks...' : 'Run 6-Check Verification Protocol'}</span>
@@ -450,9 +477,14 @@ export default function App() {
             {/* Right Column: Verification Result Report */}
             <div className="card">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-color)', marginBottom: '1rem' }}>
-                <h3 className="card-title" style={{ margin: 0 }}>
-                  Verification Audit Certificate
-                </h3>
+                <div>
+                  <h3 className="card-title" style={{ margin: 0 }}>
+                    Verification Audit Certificate
+                  </h3>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                    Authoritative Indian Legal Corpus Grounding Protocol
+                  </div>
+                </div>
                 {verificationReport && <CitationBadge status={verificationReport.overall_status} />}
               </div>
 
@@ -461,17 +493,88 @@ export default function App() {
                   <ShieldCheck size={40} style={{ marginBottom: '1rem', opacity: 0.4 }} />
                   <h4 style={{ color: 'var(--text-secondary)' }}>No Verification Executed Yet</h4>
                   <p style={{ fontSize: '0.84rem', marginTop: '0.25rem' }}>
-                    Configure the citation parameters on the left and trigger the protocol to inspect the full 6-gate audit trail.
+                    Configure the citation parameters on the left or select a preset to inspect the 6-gate audit trail.
                   </p>
                 </div>
               ) : (
-                <div className="verification-panel" style={{ marginTop: 0 }}>
+                <div className="verification-panel" style={{ marginTop: 0, display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                  {/* Distinct Verification Tiers Bar */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', padding: '0.65rem 0.85rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginRight: '0.2rem' }}>Tiers:</span>
+                    
+                    {/* PARSED */}
+                    <span style={{
+                      fontSize: '0.68rem',
+                      fontWeight: 600,
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '4px',
+                      backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                      color: verificationReport.extracted_case_name ? 'var(--text-primary)' : 'var(--text-muted)',
+                      border: '1px solid var(--border-color)'
+                    }}>
+                      PARSED: {verificationReport.extracted_case_name ? 'VALID FORMAT' : 'UNPARSED'}
+                    </span>
+
+                    {/* USER-SUPPLIED */}
+                    <span style={{
+                      fontSize: '0.68rem',
+                      fontWeight: 600,
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '4px',
+                      backgroundColor: verificationReport.user_document_trace ? 'rgba(245, 158, 11, 0.1)' : 'transparent',
+                      color: verificationReport.user_document_trace ? '#f59e0b' : 'var(--text-muted)',
+                      border: verificationReport.user_document_trace ? '1px solid rgba(245, 158, 11, 0.3)' : '1px dashed var(--border-color)'
+                    }}>
+                      {verificationReport.user_document_trace ? 'USER-SUPPLIED INPUT' : 'NO USER ATTACHMENT'}
+                    </span>
+
+                    {/* CORPUS-MATCHED */}
+                    <span style={{
+                      fontSize: '0.68rem',
+                      fontWeight: 600,
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '4px',
+                      backgroundColor: verificationReport.existence_check.passed ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.1)',
+                      color: verificationReport.existence_check.passed ? 'var(--status-verified)' : '#f87171',
+                      border: verificationReport.existence_check.passed ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.25)'
+                    }}>
+                      {verificationReport.existence_check.passed ? 'CORPUS-MATCHED' : 'NO CORPUS MATCH'}
+                    </span>
+
+                    {/* AUTHORITATIVE */}
+                    <span style={{
+                      fontSize: '0.68rem',
+                      fontWeight: 600,
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '4px',
+                      backgroundColor: verificationReport.authoritative_legal_trace ? 'rgba(59, 130, 246, 0.12)' : 'transparent',
+                      color: verificationReport.authoritative_legal_trace ? '#60a5fa' : 'var(--text-muted)',
+                      border: verificationReport.authoritative_legal_trace ? '1px solid rgba(59, 130, 246, 0.3)' : '1px dashed var(--border-color)'
+                    }}>
+                      {verificationReport.authoritative_legal_trace ? 'AUTHORITATIVE GROUNDING' : 'NOT AUTHORITATIVE'}
+                    </span>
+
+                    {/* VERIFIED */}
+                    <span style={{
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      padding: '0.15rem 0.55rem',
+                      borderRadius: '4px',
+                      backgroundColor: verificationReport.overall_status === 'VERIFIED' ? 'var(--status-verified)' : 'transparent',
+                      color: verificationReport.overall_status === 'VERIFIED' ? '#000000' : 'var(--text-muted)',
+                      border: verificationReport.overall_status === 'VERIFIED' ? 'none' : '1px solid var(--border-color)'
+                    }}>
+                      {verificationReport.overall_status === 'VERIFIED' ? 'VERIFIED' : 'UNVERIFIED'}
+                    </span>
+                  </div>
+
+                  {/* 6 Verification Checks */}
                   <div className="check-item">
                     <div>
                       <div className="check-title">1. Existence Check</div>
                       <div className="check-details">{verificationReport.existence_check.details}</div>
                     </div>
-                    <span style={{ color: verificationReport.existence_check.passed ? 'var(--status-verified)' : 'var(--status-contested)', fontWeight: 600, fontSize: '0.8rem' }}>
+                    <span style={{ color: verificationReport.existence_check.passed ? 'var(--status-verified)' : '#f87171', fontWeight: 600, fontSize: '0.8rem' }}>
                       {verificationReport.existence_check.passed ? 'PASS' : 'FAIL'}
                     </span>
                   </div>
@@ -481,27 +584,41 @@ export default function App() {
                       <div className="check-title">2. Identity Check</div>
                       <div className="check-details">{verificationReport.identity_check.details}</div>
                     </div>
-                    <span style={{ color: verificationReport.identity_check.passed ? 'var(--status-verified)' : 'var(--status-contested)', fontWeight: 600, fontSize: '0.8rem' }}>
+                    <span style={{ color: verificationReport.identity_check.passed ? 'var(--status-verified)' : '#f87171', fontWeight: 600, fontSize: '0.8rem' }}>
                       {verificationReport.identity_check.passed ? 'PASS' : 'FAIL'}
                     </span>
                   </div>
 
                   <div className="check-item">
                     <div>
-                      <div className="check-title">3. Source Check</div>
+                      <div className="check-title" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        3. Source Check
+                        {verificationReport.source_type && (
+                          <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: '0.1rem 0.35rem', borderRadius: '3px' }}>
+                            [{verificationReport.source_type}]
+                          </span>
+                        )}
+                      </div>
                       <div className="check-details">{verificationReport.source_check.details}</div>
                     </div>
-                    <span style={{ color: verificationReport.source_check.passed ? 'var(--status-verified)' : 'var(--status-contested)', fontWeight: 600, fontSize: '0.8rem' }}>
+                    <span style={{ color: verificationReport.source_check.passed ? 'var(--status-verified)' : '#f87171', fontWeight: 600, fontSize: '0.8rem' }}>
                       {verificationReport.source_check.passed ? 'PASS' : 'FAIL'}
                     </span>
                   </div>
 
                   <div className="check-item">
                     <div>
-                      <div className="check-title">4. Quotation Check</div>
+                      <div className="check-title" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        4. Quotation Check
+                        {verificationReport.quotation_match_type && (
+                          <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: '0.1rem 0.35rem', borderRadius: '3px' }}>
+                            [{verificationReport.quotation_match_type}]
+                          </span>
+                        )}
+                      </div>
                       <div className="check-details">{verificationReport.quotation_check.details}</div>
                     </div>
-                    <span style={{ color: verificationReport.quotation_check.passed ? 'var(--status-verified)' : 'var(--status-contested)', fontWeight: 600, fontSize: '0.8rem' }}>
+                    <span style={{ color: verificationReport.quotation_check.passed ? 'var(--status-verified)' : '#f87171', fontWeight: 600, fontSize: '0.8rem' }}>
                       {verificationReport.quotation_check.passed ? 'PASS' : 'FAIL'}
                     </span>
                   </div>
@@ -511,7 +628,7 @@ export default function App() {
                       <div className="check-title">5. Proposition Check</div>
                       <div className="check-details">{verificationReport.proposition_check.details}</div>
                     </div>
-                    <span style={{ color: verificationReport.proposition_check.passed ? 'var(--status-verified)' : 'var(--status-contested)', fontWeight: 600, fontSize: '0.8rem' }}>
+                    <span style={{ color: verificationReport.proposition_check.passed ? 'var(--status-verified)' : '#f87171', fontWeight: 600, fontSize: '0.8rem' }}>
                       {verificationReport.proposition_check.passed ? 'PASS' : 'FAIL'}
                     </span>
                   </div>
@@ -521,13 +638,45 @@ export default function App() {
                       <div className="check-title">6. Trace Check</div>
                       <div className="check-details">{verificationReport.trace_check.details}</div>
                     </div>
-                    <span style={{ color: verificationReport.trace_check.passed ? 'var(--status-verified)' : 'var(--status-contested)', fontWeight: 600, fontSize: '0.8rem' }}>
+                    <span style={{ color: verificationReport.trace_check.passed ? 'var(--status-verified)' : '#f87171', fontWeight: 600, fontSize: '0.8rem' }}>
                       {verificationReport.trace_check.passed ? 'PASS' : 'FAIL'}
                     </span>
                   </div>
+
+                  {/* Separate Authoritative Legal Trace & User Document Trace Panes */}
+                  {verificationReport.authoritative_legal_trace && (
+                    <div style={{ padding: '0.75rem 0.9rem', backgroundColor: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: 'var(--radius-sm)', fontSize: '0.78rem' }}>
+                      <div style={{ color: 'var(--status-verified)', fontWeight: 600, marginBottom: '0.3rem' }}>
+                        Authoritative Legal Corpus Trace
+                      </div>
+                      <div style={{ color: 'var(--text-secondary)' }}>
+                        <div><strong>Document:</strong> {verificationReport.authoritative_legal_trace.corpus_document_id} ({verificationReport.authoritative_legal_trace.case_title})</div>
+                        <div><strong>Location:</strong> Para {verificationReport.authoritative_legal_trace.paragraph_number}, Page {verificationReport.authoritative_legal_trace.page_number}</div>
+                        {verificationReport.authoritative_legal_trace.checksum_sha256 && (
+                          <div><strong>SHA-256:</strong> <code>{verificationReport.authoritative_legal_trace.checksum_sha256}</code></div>
+                        )}
+                        {verificationReport.authoritative_legal_trace.source_url && (
+                          <div><strong>Official Source:</strong> <a href={verificationReport.authoritative_legal_trace.source_url} target="_blank" rel="noreferrer" style={{ color: '#ffffff', textDecoration: 'underline' }}>{verificationReport.authoritative_legal_trace.source_url}</a></div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {verificationReport.user_document_trace && !verificationReport.authoritative_legal_trace && (
+                    <div style={{ padding: '0.75rem 0.9rem', backgroundColor: 'rgba(239, 68, 68, 0.05)', border: '1px dashed rgba(239, 68, 68, 0.3)', borderRadius: 'var(--radius-sm)', fontSize: '0.78rem' }}>
+                      <div style={{ color: '#f87171', fontWeight: 600, marginBottom: '0.3rem' }}>
+                        User Document Trace (Non-Authoritative)
+                      </div>
+                      <div style={{ color: 'var(--text-muted)' }}>
+                        <div><strong>File ID:</strong> {verificationReport.user_document_trace.document_id || 'User Upload'} (Page {verificationReport.user_document_trace.page_number || 1})</div>
+                        <div><strong>Audit Note:</strong> User-document trace only — authoritative trace unavailable in official Indian Legal Corpus.</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
+
           </div>
         )}
 

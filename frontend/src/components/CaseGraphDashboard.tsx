@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { TimelineViewer, TimelineEvent } from './TimelineViewer';
 import { EvidenceMapView, EvidenceItem } from './EvidenceMapView';
+import { LegalMarkdownView } from './LegalMarkdownView';
 
 export interface FactItem {
   fact_id: string;
@@ -66,56 +67,9 @@ interface CaseGraphDashboardProps {
   onUpdateCaseGraph?: (graph: CaseGraph) => void;
 }
 
-export const renderMarkdownInline = (text: string): React.ReactNode => {
-  if (!text) return null;
-  const lines = text.split('\n');
-
-  return lines.map((line, lineIdx) => {
-    const trimmed = line.trim();
-    if (!trimmed) {
-      return <div key={lineIdx} style={{ height: '0.35rem' }} />;
-    }
-
-    const isBullet = trimmed.startsWith('- ') || trimmed.startsWith('* ') || /^\d+[\.\)]\s+/.test(trimmed);
-    const cleanLine = isBullet ? trimmed.replace(/^[-*]\s+|\d+[\.\)]\s+/, '') : trimmed;
-
-    // Split by **...**
-    const parts = cleanLine.split(/(\*\*[^*]+?\*\*)/g);
-
-    const renderedParts = parts.map((part, pIdx) => {
-      if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
-        return (
-          <strong key={pIdx} style={{ color: '#ffffff', fontWeight: 600 }}>
-            {part.slice(2, -2)}
-          </strong>
-        );
-      }
-      return part;
-    });
-
-    if (isBullet) {
-      return (
-        <div key={lineIdx} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.35rem', paddingLeft: '0.4rem' }}>
-          <span style={{ color: '#818cf8', fontSize: '1rem', lineHeight: '1.2' }}>•</span>
-          <div style={{ flex: 1, color: 'var(--text-secondary)' }}>
-            {renderedParts}
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div key={lineIdx} style={{ marginBottom: '0.4rem', color: 'var(--text-secondary)' }}>
-        {renderedParts}
-      </div>
-    );
-  });
-};
 
 export const CaseGraphDashboard: React.FC<CaseGraphDashboardProps> = ({ caseGraph, onGenerateGraph, loading, onUpdateCaseGraph }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'facts' | 'timeline' | 'evidence' | 'issues'>('overview');
-  const [factCategoryFilter, setFactCategoryFilter] = useState<string>('all');
-  const [factSearchQuery, setFactSearchQuery] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'overview' | 'timeline' | 'evidence' | 'issues'>('overview');
   const [copiedSummary, setCopiedSummary] = useState<boolean>(false);
   const [localTimeline, setLocalTimeline] = useState<TimelineEvent[]>(caseGraph?.timeline || []);
   const [timelineLoading, setTimelineLoading] = useState<boolean>(false);
@@ -147,7 +101,7 @@ export const CaseGraphDashboard: React.FC<CaseGraphDashboardProps> = ({ caseGrap
     }
   };
 
-  const handleTabClick = (tab: 'overview' | 'facts' | 'timeline' | 'evidence' | 'issues') => {
+  const handleTabClick = (tab: 'overview' | 'timeline' | 'evidence' | 'issues') => {
     setActiveTab(tab);
     if (tab === 'timeline' && localTimeline.length === 0 && !timelineLoading) {
       handleGenerateTimeline();
@@ -169,21 +123,8 @@ export const CaseGraphDashboard: React.FC<CaseGraphDashboardProps> = ({ caseGrap
     );
   }
 
-  // Filter Facts
-  const filteredFacts = caseGraph.facts.filter((fact) => {
-    const matchesCategory = factCategoryFilter === 'all' || fact.category.toLowerCase() === factCategoryFilter.toLowerCase();
-    const matchesSearch = !factSearchQuery || 
-      fact.description.toLowerCase().includes(factSearchQuery.toLowerCase()) ||
-      fact.parties_involved.some(p => p.toLowerCase().includes(factSearchQuery.toLowerCase())) ||
-      (fact.date_context && fact.date_context.toLowerCase().includes(factSearchQuery.toLowerCase()));
-    return matchesCategory && matchesSearch;
-  });
-
-  const categoryCounts = caseGraph.facts.reduce<Record<string, number>>((acc, f) => {
-    const cat = f.category.toLowerCase();
-    acc[cat] = (acc[cat] || 0) + 1;
-    return acc;
-  }, {});
+  const keyFacts = caseGraph.facts.filter((f) => f.category.toLowerCase() !== 'disputed' && f.category.toLowerCase() !== 'contradiction');
+  const disputedFacts = caseGraph.facts.filter((f) => f.category.toLowerCase() === 'disputed' || f.category.toLowerCase() === 'contradiction');
 
   const handleCopySummary = () => {
     if (caseGraph.summary) {
@@ -202,11 +143,7 @@ export const CaseGraphDashboard: React.FC<CaseGraphDashboardProps> = ({ caseGrap
     const rawSections = summaryText.split(/(?=###\s+)/g);
 
     if (rawSections.length <= 1) {
-      return (
-        <div style={{ fontSize: '0.86rem', lineHeight: '1.6' }}>
-          {renderMarkdownInline(summaryText)}
-        </div>
-      );
+      return <LegalMarkdownView content={summaryText} />;
     }
 
     return (
@@ -239,9 +176,7 @@ export const CaseGraphDashboard: React.FC<CaseGraphDashboardProps> = ({ caseGrap
               }}>
                 <Scale size={15} style={{ color: '#818cf8' }} /> {heading}
               </h5>
-              <div style={{ fontSize: '0.85rem', lineHeight: '1.6' }}>
-                {renderMarkdownInline(body)}
-              </div>
+              <LegalMarkdownView content={body} />
             </div>
           );
         })}
@@ -311,9 +246,6 @@ export const CaseGraphDashboard: React.FC<CaseGraphDashboardProps> = ({ caseGrap
         <button className={`btn ${activeTab === 'overview' ? 'btn-primary' : ''}`} onClick={() => handleTabClick('overview')} style={{ fontSize: '0.78rem', padding: '0.3rem 0.7rem' }}>
           Overview
         </button>
-        <button className={`btn ${activeTab === 'facts' ? 'btn-primary' : ''}`} onClick={() => handleTabClick('facts')} style={{ fontSize: '0.78rem', padding: '0.3rem 0.7rem' }}>
-          Facts ({caseGraph.facts.length})
-        </button>
         <button className={`btn ${activeTab === 'timeline' ? 'btn-primary' : ''}`} onClick={() => handleTabClick('timeline')} style={{ fontSize: '0.78rem', padding: '0.3rem 0.7rem' }}>
           Timeline ({localTimeline.length}) {timelineLoading && '⚡'}
         </button>
@@ -334,7 +266,7 @@ export const CaseGraphDashboard: React.FC<CaseGraphDashboardProps> = ({ caseGrap
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
               <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '0.75rem', textAlign: 'center' }}>
                 <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#ffffff' }}>{caseGraph.facts.length}</div>
-                <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>Verified Facts</div>
+                <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>Case Graph Facts</div>
               </div>
               <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '0.75rem', textAlign: 'center' }}>
                 <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#60a5fa' }}>{localTimeline.length}</div>
@@ -392,157 +324,61 @@ export const CaseGraphDashboard: React.FC<CaseGraphDashboardProps> = ({ caseGrap
                 ))}
               </div>
             </div>
-          </div>
-        )}
 
-        {/* FACTS TAB */}
-        {activeTab === 'facts' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {/* Filter and Search Controls */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', backgroundColor: 'var(--bg-secondary)', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-              {/* Category Filter Pills */}
-              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginRight: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                  <Filter size={13} /> Filter:
-                </span>
-                {['all', 'substantive', 'procedural', 'disputed', 'contradiction', 'background'].map((cat) => {
-                  const count = cat === 'all' ? caseGraph.facts.length : (categoryCounts[cat] || 0);
-                  const isSelected = factCategoryFilter === cat;
-                  return (
-                    <button
-                      key={cat}
-                      onClick={() => setFactCategoryFilter(cat)}
-                      className={`btn ${isSelected ? 'btn-primary' : ''}`}
-                      style={{ 
-                        fontSize: '0.72rem', 
-                        padding: '0.2rem 0.55rem', 
-                        borderRadius: '12px',
-                        textTransform: 'capitalize' 
-                      }}
-                    >
-                      {cat} ({count})
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Keyword Search Input */}
-              <div style={{ position: 'relative' }}>
-                <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                <input
-                  type="text"
-                  placeholder="Search facts by keyword, party name, or date..."
-                  value={factSearchQuery}
-                  onChange={(e) => setFactSearchQuery(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.4rem 0.75rem 0.4rem 2rem',
-                    fontSize: '0.8rem',
-                    backgroundColor: 'var(--bg-tertiary)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: 'var(--radius-sm)',
-                    color: 'var(--text-primary)'
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Facts List */}
-            {filteredFacts.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                No facts match the selected filter or search criteria.
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {filteredFacts.map((fact) => {
-                  const badgeStyle = getFactBadgeStyle(fact.category);
-                  const isDisputed = fact.category.toLowerCase() === 'disputed';
-                  const isContradiction = fact.category.toLowerCase() === 'contradiction';
-
-                  return (
-                    <div 
-                      key={fact.fact_id} 
-                      style={{ 
-                        backgroundColor: isDisputed 
-                          ? 'rgba(245, 158, 11, 0.05)' 
-                          : isContradiction 
-                          ? 'rgba(239, 68, 68, 0.05)' 
-                          : 'var(--bg-secondary)', 
-                        border: isDisputed 
-                          ? '1px solid rgba(245, 158, 11, 0.3)' 
-                          : isContradiction 
-                          ? '1px solid rgba(239, 68, 68, 0.3)' 
-                          : '1px solid var(--border-color)', 
-                        borderRadius: 'var(--radius-md)', 
-                        padding: '0.9rem 1.1rem' 
-                      }}
-                    >
-                      {/* Fact Metadata Header */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.4rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          <span 
-                            style={{ 
-                              display: 'inline-flex', 
-                              alignItems: 'center', 
-                              gap: '0.25rem',
-                              backgroundColor: badgeStyle.bg,
-                              border: badgeStyle.border,
-                              color: badgeStyle.color,
-                              fontSize: '0.68rem',
-                              fontWeight: 600,
-                              padding: '0.15rem 0.45rem',
-                              borderRadius: '4px',
-                              textTransform: 'uppercase'
-                            }}
-                          >
-                            {badgeStyle.icon}
-                            {fact.category}
-                          </span>
-
-                          {fact.date_context && (
-                            <span className="provenance-tag" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                              <Calendar size={11} /> {fact.date_context}
-                            </span>
-                          )}
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          <span className="provenance-tag">Page {fact.page_number}</span>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                            {Math.round(fact.confidence * 100)}% Conf
-                          </span>
-                        </div>
+            {/* Contextual Section: Key Case Facts */}
+            {keyFacts.length > 0 && (
+              <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '1.15rem' }}>
+                <h4 style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <CheckCircle2 size={16} style={{ color: '#34d399' }} /> Key Substantive Facts ({keyFacts.length})
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                  {keyFacts.map((fact) => (
+                    <div key={fact.fact_id} style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '0.75rem 0.9rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                        <span className="provenance-tag" style={{ textTransform: 'capitalize' }}>
+                          {fact.category} • Page {fact.page_number}
+                        </span>
+                        {fact.date_context && (
+                          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{fact.date_context}</span>
+                        )}
                       </div>
-
-                      {/* Fact Description */}
-                      <p style={{ fontSize: '0.88rem', color: 'var(--text-primary)', lineHeight: '1.5', margin: '0 0 0.5rem 0' }}>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-primary)', margin: 0, lineHeight: '1.5' }}>
                         {fact.description}
                       </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-                      {/* Parties Tag Row */}
+            {/* Contextual Section: Disputed Facts & Contradictions */}
+            {disputedFacts.length > 0 && (
+              <div style={{ backgroundColor: 'rgba(245, 158, 11, 0.04)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 'var(--radius-md)', padding: '1.15rem' }}>
+                <h4 style={{ fontSize: '0.9rem', color: '#fbbf24', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <AlertTriangle size={16} /> Contested Positions & Disputed Facts ({disputedFacts.length})
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                  {disputedFacts.map((fact) => (
+                    <div key={fact.fact_id} style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: 'var(--radius-sm)', padding: '0.75rem 0.9rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#f59e0b', textTransform: 'uppercase' }}>
+                          Contested • Page {fact.page_number}
+                        </span>
+                        {fact.date_context && (
+                          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{fact.date_context}</span>
+                        )}
+                      </div>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-primary)', margin: 0, lineHeight: '1.5' }}>
+                        {fact.description}
+                      </p>
                       {fact.parties_involved && fact.parties_involved.length > 0 && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap', paddingTop: '0.35rem', borderTop: '1px dashed var(--border-color)' }}>
-                          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Parties:</span>
-                          {fact.parties_involved.map((party, pIdx) => (
-                            <span 
-                              key={pIdx} 
-                              style={{ 
-                                fontSize: '0.7rem', 
-                                backgroundColor: 'var(--bg-tertiary)', 
-                                border: '1px solid var(--border-color)', 
-                                borderRadius: '3px', 
-                                padding: '0.1rem 0.35rem', 
-                                color: 'var(--text-secondary)' 
-                              }}
-                            >
-                              {party}
-                            </span>
-                          ))}
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
+                          Parties: {fact.parties_involved.join(', ')}
                         </div>
                       )}
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
             )}
           </div>

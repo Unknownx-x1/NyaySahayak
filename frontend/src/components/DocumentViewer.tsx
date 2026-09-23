@@ -16,6 +16,7 @@ import {
   Cpu,
   Zap
 } from 'lucide-react';
+import { LegalMarkdownView } from './LegalMarkdownView';
 
 interface Chunk {
   id: string;
@@ -319,9 +320,9 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({ document }) => {
                   </button>
                 </div>
 
-                {/* Answer Content with Citation Badges */}
-                <div style={{ fontSize: '0.88rem', color: 'var(--text-primary)', lineHeight: 1.65, whiteSpace: 'pre-line' }}>
-                  {renderFormattedAnswer(ragResult.answer)}
+                {/* Answer Content with Styled Tables, Headings, Lists, and Citation Badges */}
+                <div style={{ fontSize: '0.88rem', color: 'var(--text-primary)' }}>
+                  <LegalMarkdownView content={ragResult.answer} />
                 </div>
               </div>
 

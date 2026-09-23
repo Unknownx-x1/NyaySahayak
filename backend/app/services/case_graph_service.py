@@ -131,8 +131,8 @@ class CaseGraphService:
         # 1. Fact Finder Agent
         facts, parties = FactFinderAgent.extract_facts(chunks)
 
-        # 2. Timeline Engine
-        timeline = TimelineEngine.build_timeline(chunks)
+        # 2. Timeline Engine (with fact cross-synchronization)
+        timeline = TimelineEngine.build_timeline(chunks, facts=facts)
 
         # 3. Evidence Mapper
         evidence_map, legal_issues = EvidenceMapper.map_evidence(chunks)
@@ -194,7 +194,8 @@ class CaseGraphService:
             } for c in chunks_records
         ]
 
-        timeline = TimelineEngine.build_timeline(chunks)
+        facts, _ = FactFinderAgent.extract_facts(chunks)
+        timeline = TimelineEngine.build_timeline(chunks, facts=facts)
 
         rec = db.query(CaseGraphRecord).filter(CaseGraphRecord.case_id == case_id).order_by(CaseGraphRecord.created_at.desc()).first()
         if rec and rec.graph_json:
