@@ -1,311 +1,263 @@
-import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Scale, FileText, Layers, Sparkles, Home, LayoutDashboard, ArrowLeft } from 'lucide-react';
-import { CaseUpload } from './components/CaseUpload';
-import { DocumentViewer } from './components/DocumentViewer';
-import { CitationBadge } from './components/CitationBadge';
-import { CorpusWhitelistView } from './components/CorpusWhitelistView';
-import { CaseGraphDashboard, CaseGraph } from './components/CaseGraphDashboard';
+import React, { useState } from 'react';
+import {
+  Home,
+  Layers,
+  FileText,
+  ShieldCheck,
+  Scale,
+  ArrowLeft,
+  Sparkles
+} from 'lucide-react';
+import { RevampedHeroLanding } from './components/revamped/RevampedHeroLanding';
+import { RevampedCaseGraphPage } from './components/revamped/RevampedCaseGraphPage';
+import { RevampedDocumentViewerPage } from './components/revamped/RevampedDocumentViewerPage';
+import { RevampedCourtroomSimulationPage } from './components/revamped/RevampedCourtroomSimulationPage';
+import { RevampedVerificationPage } from './components/revamped/RevampedVerificationPage';
 
-interface CitationReport {
-  citation_id: string;
-  raw_citation: string;
-  overall_status: 'VERIFIED' | 'PARTIAL' | 'CONTESTED' | 'UNVERIFIED';
-  existence_check: { passed: boolean; details: string };
-  identity_check: { passed: boolean; details: string };
-  source_check: { passed: boolean; details: string };
-  quotation_check: { passed: boolean; details: string };
-  proposition_check: { passed: boolean; details: string };
-  trace_check: { passed: boolean; details: string };
-}
+export type AppView = 'home' | 'graph' | 'documents' | 'simulation' | 'verify';
 
 export default function App() {
-  const [activeCaseId, setActiveCaseId] = useState<string>('case_demo_001');
-  const [documents, setDocuments] = useState<any[]>([]);
-  const [selectedDoc, setSelectedDoc] = useState<any | null>(null);
-  const [activeRightTab, setActiveRightTab] = useState<'document' | 'case_graph'>('document');
-  
-  // Phase 2 Case Graph State
-  const [caseGraph, setCaseGraph] = useState<CaseGraph | null>(null);
-  const [compilingGraph, setCompilingGraph] = useState(false);
+  const [currentView, setCurrentView] = useState<AppView>('home');
 
-  // Verification Tester state
-  const [testCitation, setTestCitation] = useState('Kesavananda Bharati v. State of Kerala, (1973) 4 SCC 225');
-  const [testQuote, setTestQuote] = useState('Basic structure of the Constitution cannot be amended.');
-  const [testSource, setTestSource] = useState('The basic structure of the Constitution of India cannot be altered or damaged by constitutional amendment.');
-  const [verifying, setVerifying] = useState(false);
-  const [verificationReport, setVerificationReport] = useState<CitationReport | null>(null);
+  // If in 'home' mode, render the full-screen editorial landing experience with Three.js Court File Hero
+  if (currentView === 'home') {
+    return (
+      <div className="relative w-screen h-screen overflow-hidden">
+        <RevampedHeroLanding
+          activeNav="home"
+          onNavigate={(view) => setCurrentView(view)}
+        />
 
-  // Initialize Demo Case
-  useEffect(() => {
-    fetch(`/api/cases`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id: 'counsel_demo',
-        title: 'State of Kerala v. Constitutional Amendments (Demo)',
-        case_number: 'WP(C) 135/1973',
-        court_type: 'Supreme Court of India',
-        description: 'Constitutional validity demo workspace'
-      })
-    })
-      .then(res => res.json())
-      .then(data => setActiveCaseId(data.id))
-      .catch(() => {});
-  }, []);
-
-  const handleUploadSuccess = (docData: any) => {
-    setDocuments(prev => [docData, ...prev]);
-    setSelectedDoc(docData);
-    handleGenerateCaseGraph();
-  };
-
-  const handleGenerateCaseGraph = async () => {
-    setCompilingGraph(true);
-    try {
-      const res = await fetch(`/api/case-graph/generate/${activeCaseId}`, { method: 'POST' });
-      const data = await res.json();
-      setCaseGraph(data);
-      setActiveRightTab('case_graph');
-    } catch (err) {
-      console.error('Failed to generate Case Graph:', err);
-    } finally {
-      setCompilingGraph(false);
-    }
-  };
-
-  const handleRunVerification = async () => {
-    setVerifying(true);
-    try {
-      const res = await fetch('/api/verification/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          case_id: activeCaseId,
-          citation_text: testCitation,
-          quoted_text: testQuote,
-          source_passage: testSource,
-          document_id: selectedDoc?.id || 'doc_sc_1973',
-          page_number: 45
-        })
-      });
-      const data = await res.json();
-      setVerificationReport(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setVerifying(false);
-    }
-  };
-
-  // Render Case Intelligence Application Workspace
-  return (
-    <div className="app-container">
-      {/* Header with Navigation Back to Landing Page */}
-      <header className="header">
-        <div className="logo-group">
-          <div className="logo-badge">NYAY</div>
-          <div>
-            <div className="logo-title">NyaySahayak Workspace</div>
-            <div className="subtitle">Verified Multi-Agent AI for Courtroom Preparation</div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <a
-            href="http://127.0.0.1:8080"
-            className="btn btn-ghost"
-            style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', textDecoration: 'none' }}
-          >
-            <Home size={14} /> Back to Landing Page
-          </a>
-
-          <span className="provenance-tag">
-            <Scale size={12} style={{ display: 'inline', marginRight: '4px' }} />
-            Phase 2 Case Graph Active
+        {/* Floating Quick View Switcher Bar (Always accessible for easy previewing of all 4 designs) */}
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '32px',
+            zIndex: 99,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '6px 12px',
+            borderRadius: '9999px',
+            background: 'rgba(18, 20, 28, 0.95)',
+            border: '1px solid #2a3044',
+            backdropFilter: 'blur(16px)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.6)'
+          }}
+        >
+          <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono-nyay)', color: '#94a3b8', marginRight: '4px' }}>
+            SUITE PREVIEWS:
           </span>
+          <button
+            onClick={() => setCurrentView('graph')}
+            className="app-view-pill-btn"
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Layers size={13} style={{ color: '#ef4444' }} />
+            <span>02 Case Graph</span>
+          </button>
+          <button
+            onClick={() => setCurrentView('documents')}
+            className="app-view-pill-btn"
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <FileText size={13} style={{ color: '#ef4444' }} />
+            <span>03 Document Viewer</span>
+          </button>
+          <button
+            onClick={() => setCurrentView('simulation')}
+            className="app-view-pill-btn"
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Scale size={13} style={{ color: '#ef4444' }} />
+            <span>04 Courtroom Arena</span>
+          </button>
+          <button
+            onClick={() => setCurrentView('verify')}
+            className="app-view-pill-btn"
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <ShieldCheck size={13} style={{ color: '#ef4444' }} />
+            <span>05 Verification</span>
+          </button>
         </div>
-      </header>
+      </div>
+    );
+  }
 
-      {/* Main Workspace */}
-      <main className="main-content">
-        {/* Phase Banner */}
-        <div className="phase-banner">
-          <div>
-            <span className="phase-tag">Phase 2 — Weeks 6 to 10 Active</span>
-            <h2 style={{ fontSize: '1.1rem', marginTop: '0.2rem' }}>
-              Case Intelligence & Master Case Graph Context
-            </h2>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-              Single Versioned Legal Context: Extracting Facts, Chronological Timeline, Evidence Maps, and Legal Issues into a unified Case Graph.
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button className="btn btn-primary" onClick={handleGenerateCaseGraph} disabled={compilingGraph}>
-              <Sparkles size={16} /> {compilingGraph ? 'Compiling Graph...' : 'Generate Case Graph'}
+  // Workspace Mode (Case Graph, Documents, Simulation, Verify)
+  return (
+    <div className="app-workspace-layout select-none">
+      {/* 1) LEFT VERTICAL ICON SIDEBAR matching the design */}
+      <aside className="app-sidebar-rail">
+        {/* Top Logo */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
+          <button
+            onClick={() => setCurrentView('home')}
+            className="app-sidebar-logo"
+            title="NyaySahayak Home"
+          >
+            N
+          </button>
+
+          {/* Navigation Icons */}
+          <nav style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+            <button
+              onClick={() => setCurrentView('home')}
+              className="app-sidebar-btn"
+              title="01 Home (Landing)"
+            >
+              <Home size={18} />
             </button>
-            <button className="btn" onClick={handleRunVerification} disabled={verifying}>
-              <ShieldCheck size={16} /> Run Citation Check
+
+            <button
+              onClick={() => setCurrentView('graph')}
+              className={`app-sidebar-btn ${currentView === 'graph' ? 'active' : ''}`}
+              title="02 Case Graph (3D/2D)"
+            >
+              <Layers size={18} />
+            </button>
+
+            <button
+              onClick={() => setCurrentView('documents')}
+              className={`app-sidebar-btn ${currentView === 'documents' ? 'active' : ''}`}
+              title="03 Document Viewer"
+            >
+              <FileText size={18} />
+            </button>
+
+            <button
+              onClick={() => setCurrentView('simulation')}
+              className={`app-sidebar-btn ${currentView === 'simulation' ? 'active' : ''}`}
+              title="04 Courtroom Simulation Arena"
+            >
+              <Scale size={18} />
+            </button>
+
+            <button
+              onClick={() => setCurrentView('verify')}
+              className={`app-sidebar-btn ${currentView === 'verify' ? 'active' : ''}`}
+              title="05 6-Check Citation Verification"
+            >
+              <ShieldCheck size={18} />
+            </button>
+          </nav>
+        </div>
+
+        {/* Bottom User Avatar */}
+        <div>
+          <div
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              backgroundColor: '#c52828',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(197, 40, 40, 0.4)'
+            }}
+            title="Advocate Profile"
+          >
+            A
+          </div>
+        </div>
+      </aside>
+
+      {/* 2) MAIN CONTENT CANVAS */}
+      <div className="app-main-canvas">
+        {/* Global App Topbar */}
+        <header className="app-topbar">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <button
+              onClick={() => setCurrentView('home')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#94a3b8',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '12px',
+                fontWeight: 500
+              }}
+            >
+              <ArrowLeft size={14} />
+              <span>Back to Hero</span>
+            </button>
+
+            <span style={{ color: '#2a3044' }}>|</span>
+
+            <span style={{ fontFamily: 'var(--font-serif-nyay)', fontSize: '14px', fontWeight: 500, color: '#ffffff' }}>
+              NyaySahayak
+            </span>
+          </div>
+
+          {/* Center Mode Switcher Tabs */}
+          <div className="app-view-pill-group">
+            <button
+              onClick={() => setCurrentView('graph')}
+              className={`app-view-pill-btn ${currentView === 'graph' ? 'active' : ''}`}
+            >
+              Case Graph (3D)
+            </button>
+            <button
+              onClick={() => setCurrentView('documents')}
+              className={`app-view-pill-btn ${currentView === 'documents' ? 'active' : ''}`}
+            >
+              Document Viewer
+            </button>
+            <button
+              onClick={() => setCurrentView('simulation')}
+              className={`app-view-pill-btn ${currentView === 'simulation' ? 'active' : ''}`}
+            >
+              Courtroom Arena
+            </button>
+            <button
+              onClick={() => setCurrentView('verify')}
+              className={`app-view-pill-btn ${currentView === 'verify' ? 'active' : ''}`}
+            >
+              6-Check Verify
             </button>
           </div>
-        </div>
 
-        {/* Workspace Layout */}
-        <div className="two-column-grid">
-          {/* Left Column: Upload & Citation Verification Playground */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <CaseUpload caseId={activeCaseId} onUploadSuccess={handleUploadSuccess} />
-
-            {/* Citation Tester Card */}
-            <div className="card">
-              <h3 className="card-title">
-                <ShieldCheck size={18} style={{ color: '#ffffff' }} /> 6-Check Citation Verification Tester
-              </h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: '1rem' }}>
-                Test legal citations against the 6 mandatory checks (*Existence, Identity, Source, Quotation, Proposition, Trace*).
-              </p>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>Legal Citation</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={testCitation}
-                    onChange={(e) => setTestCitation(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>Quoted Argument Text</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={testQuote}
-                    onChange={(e) => setTestQuote(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>Retrieved Source Passage</label>
-                  <textarea
-                    rows={3}
-                    className="form-textarea"
-                    value={testSource}
-                    onChange={(e) => setTestSource(e.target.value)}
-                  />
-                </div>
-
-                <button className="btn btn-primary" onClick={handleRunVerification} disabled={verifying} style={{ marginTop: '0.5rem' }}>
-                  {verifying ? 'Running 6 Verification Checks...' : 'Verify Citation'}
-                </button>
-              </div>
-
-              {/* Verification Report Display */}
-              {verificationReport && (
-                <div className="verification-panel">
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--border-color)' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Verification Result:</span>
-                    <CitationBadge status={verificationReport.overall_status} />
-                  </div>
-
-                  <div className="check-item">
-                    <div>
-                      <div className="check-title">1. Existence Check</div>
-                      <div className="check-details">{verificationReport.existence_check.details}</div>
-                    </div>
-                    <span style={{ color: verificationReport.existence_check.passed ? 'var(--status-verified)' : 'var(--status-contested)', fontWeight: 600, fontSize: '0.8rem' }}>
-                      {verificationReport.existence_check.passed ? 'PASS' : 'FAIL'}
-                    </span>
-                  </div>
-
-                  <div className="check-item">
-                    <div>
-                      <div className="check-title">2. Identity Check</div>
-                      <div className="check-details">{verificationReport.identity_check.details}</div>
-                    </div>
-                    <span style={{ color: verificationReport.identity_check.passed ? 'var(--status-verified)' : 'var(--status-contested)', fontWeight: 600, fontSize: '0.8rem' }}>
-                      {verificationReport.identity_check.passed ? 'PASS' : 'FAIL'}
-                    </span>
-                  </div>
-
-                  <div className="check-item">
-                    <div>
-                      <div className="check-title">3. Source Check</div>
-                      <div className="check-details">{verificationReport.source_check.details}</div>
-                    </div>
-                    <span style={{ color: verificationReport.source_check.passed ? 'var(--status-verified)' : 'var(--status-contested)', fontWeight: 600, fontSize: '0.8rem' }}>
-                      {verificationReport.source_check.passed ? 'PASS' : 'FAIL'}
-                    </span>
-                  </div>
-
-                  <div className="check-item">
-                    <div>
-                      <div className="check-title">4. Quotation Check</div>
-                      <div className="check-details">{verificationReport.quotation_check.details}</div>
-                    </div>
-                    <span style={{ color: verificationReport.quotation_check.passed ? 'var(--status-verified)' : 'var(--status-contested)', fontWeight: 600, fontSize: '0.8rem' }}>
-                      {verificationReport.quotation_check.passed ? 'PASS' : 'FAIL'}
-                    </span>
-                  </div>
-
-                  <div className="check-item">
-                    <div>
-                      <div className="check-title">5. Proposition Check</div>
-                      <div className="check-details">{verificationReport.proposition_check.details}</div>
-                    </div>
-                    <span style={{ color: verificationReport.proposition_check.passed ? 'var(--status-verified)' : 'var(--status-contested)', fontWeight: 600, fontSize: '0.8rem' }}>
-                      {verificationReport.proposition_check.passed ? 'PASS' : 'FAIL'}
-                    </span>
-                  </div>
-
-                  <div className="check-item">
-                    <div>
-                      <div className="check-title">6. Trace Check</div>
-                      <div className="check-details">{verificationReport.trace_check.details}</div>
-                    </div>
-                    <span style={{ color: verificationReport.trace_check.passed ? 'var(--status-verified)' : 'var(--status-contested)', fontWeight: 600, fontSize: '0.8rem' }}>
-                      {verificationReport.trace_check.passed ? 'PASS' : 'FAIL'}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
+          {/* Right Status */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono-nyay)', color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }} />
+              Live System Active
+            </span>
           </div>
+        </header>
 
-          {/* Right Column: Dynamic View Switcher (Document Viewer vs Master Case Graph Dashboard) */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
-              <button
-                className={`btn ${activeRightTab === 'document' ? 'btn-primary' : ''}`}
-                onClick={() => setActiveRightTab('document')}
-                style={{ fontSize: '0.8rem' }}
-              >
-                <FileText size={14} /> Page-Preserved Document Viewer
-              </button>
-              <button
-                className={`btn ${activeRightTab === 'case_graph' ? 'btn-primary' : ''}`}
-                onClick={() => setActiveRightTab('case_graph')}
-                style={{ fontSize: '0.8rem' }}
-              >
-                <Layers size={14} /> Master Case Graph Dashboard
-              </button>
-            </div>
+        {/* View Router */}
+        <main style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+          {currentView === 'graph' && (
+            <RevampedCaseGraphPage
+              onNavigate={(v) => setCurrentView(v)}
+              onOpenDocument={() => setCurrentView('documents')}
+            />
+          )}
 
-            {activeRightTab === 'document' ? (
-              <DocumentViewer document={selectedDoc} />
-            ) : (
-              <CaseGraphDashboard
-                caseGraph={caseGraph}
-                onGenerateGraph={handleGenerateCaseGraph}
-                loading={compilingGraph}
-              />
-            )}
-          </div>
-        </div>
+          {currentView === 'documents' && (
+            <RevampedDocumentViewerPage onNavigate={(v) => setCurrentView(v)} />
+          )}
 
-        {/* Whitelisted Legal Authorities Footer Section */}
-        <CorpusWhitelistView />
-      </main>
+          {currentView === 'simulation' && (
+            <RevampedCourtroomSimulationPage onNavigate={(v) => setCurrentView(v)} />
+          )}
+
+          {currentView === 'verify' && (
+            <RevampedVerificationPage onNavigate={(v) => setCurrentView(v)} />
+          )}
+        </main>
+      </div>
     </div>
   );
 }
