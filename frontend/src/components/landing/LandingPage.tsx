@@ -63,7 +63,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchAppWorkspace }
         {/* Interactive Real-Time AI Chat Demo */}
         <InteractiveAIChatDemo />
 
-        {/* Multilingual Showcase (6+ Languages) */}
+        {/* Multilingual Showcase */}
         <MultilingualShowcase />
 
         {/* Lawyer Network Showcase */}

@@ -22,7 +22,7 @@ export const FeaturesGrid: React.FC<FeaturesGridProps> = ({ onOpenChat }) => {
     },
     {
       icon: <Languages className="w-6 h-6 text-[var(--color-primary-light)]" />,
-      title: "Multilingual Support (6+ Languages)",
+      title: "Multilingual Support",
       description: "Full native support for Hindi (हिन्दी), Tamil (தமிழ்), Marathi (मராठी), Bengali (বাংলা), Telugu, and English.",
       highlight: "Zero Translation Loss"
     },

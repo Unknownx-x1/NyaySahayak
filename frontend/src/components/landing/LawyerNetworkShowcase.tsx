@@ -11,7 +11,6 @@ export const LawyerNetworkShowcase: React.FC<LawyerNetworkProps> = ({ onOpenChat
     {
       name: "Adv. Rajesh Sharma",
       court: "Supreme Court of India & Delhi High Court",
-      exp: "18+ Years Exp.",
       specialty: "Constitutional & Property Disputes",
       location: "New Delhi",
       verified: true
@@ -19,7 +18,6 @@ export const LawyerNetworkShowcase: React.FC<LawyerNetworkProps> = ({ onOpenChat
     {
       name: "Adv. Meera Sundaram",
       court: "Madras High Court & District Courts",
-      exp: "14+ Years Exp.",
       specialty: "Consumer Protection & Commercial Law",
       location: "Chennai",
       verified: true
@@ -27,7 +25,6 @@ export const LawyerNetworkShowcase: React.FC<LawyerNetworkProps> = ({ onOpenChat
     {
       name: "Adv. Vikram Deshmukh",
       court: "Bombay High Court",
-      exp: "16+ Years Exp.",
       specialty: "Tenancy & Civil Litigation",
       location: "Mumbai",
       verified: true
@@ -35,7 +32,6 @@ export const LawyerNetworkShowcase: React.FC<LawyerNetworkProps> = ({ onOpenChat
     {
       name: "Adv. Ananya Chatterjee",
       court: "Calcutta High Court",
-      exp: "12+ Years Exp.",
       specialty: "Cyber Law & Family Matters",
       location: "Kolkata",
       verified: true
@@ -102,7 +98,7 @@ export const LawyerNetworkShowcase: React.FC<LawyerNetworkProps> = ({ onOpenChat
 
               <div className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)] mb-3">
                 <MapPin className="w-3.5 h-3.5 text-[var(--color-primary-light)]" />
-                <span>{adv.location} • {adv.exp}</span>
+                <span>{adv.location}</span>
               </div>
 
               <p className="text-xs text-slate-300 font-medium mb-3">

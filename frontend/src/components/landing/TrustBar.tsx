@@ -1,15 +1,14 @@
 import React from 'react';
-import { ShieldCheck, Scale, Award, Building2, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 
 export const TrustBar: React.FC = () => {
   const trustBadges = [
-    { text: "Supreme Court Bar Association Members", icon: "🏛️" },
-    { text: "Featured in Times of India", icon: "📰" },
-    { text: "Bar Council of Delhi Accredited Advocates", icon: "⚖️" },
-    { text: "50,000+ Legal Queries Resolved", icon: "🛡️" },
-    { text: "100% Data Privacy & Encryption", icon: "🔒" },
-    { text: "High Court Advocates Guild", icon: "📜" },
-    { text: "Featured in Economic Times Legal", icon: "💼" },
+    { text: "Official-source citation checks", icon: "🏛️" },
+    { text: "Plain-language legal explanations", icon: "📰" },
+    { text: "Advocate discovery support", icon: "⚖️" },
+    { text: "Privacy-focused encryption", icon: "🔒" },
+    { text: "Court document drafting tools", icon: "📜" },
+    { text: "Multilingual assistance", icon: "💼" },
   ];
 
   // Duplicate list for infinite smooth CSS loop
@@ -20,7 +19,7 @@ export const TrustBar: React.FC = () => {
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4 text-center">
         <span className="text-xs font-semibold tracking-widest text-[var(--color-primary-light)] uppercase flex items-center justify-center gap-2">
-          <ShieldCheck className="w-3.5 h-3.5" /> Trusted by 50,000+ Everyday Indians & Legal Professionals
+          <ShieldCheck className="w-3.5 h-3.5" /> Built for Everyday Indians & Legal Professionals
         </span>
       </div>
 

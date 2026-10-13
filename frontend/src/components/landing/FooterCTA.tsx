@@ -38,7 +38,7 @@ export const FooterCTA: React.FC<FooterCTAProps> = ({ onOpenChat }) => {
               onClick={onOpenChat}
               className="btn-pill btn-primary-gold px-10 py-4 text-base font-bold shadow-2xl"
             >
-              <span>Ask Nyaysahayak Free</span>
+              <span>Launch Legal Workspace</span>
               <ArrowRight className="w-5 h-5 text-slate-950" />
             </button>
           </div>
@@ -64,7 +64,7 @@ export const FooterCTA: React.FC<FooterCTAProps> = ({ onOpenChat }) => {
             <ul className="space-y-2.5 text-xs text-[var(--color-text-muted)]">
               <li><a href="#ai-demo" className="hover:text-[var(--color-primary-light)] transition-colors">24/7 AI Legal Assistant</a></li>
               <li><a href="#features" className="hover:text-[var(--color-primary-light)] transition-colors">Automated Document Drafting</a></li>
-              <li><a href="#languages" className="hover:text-[var(--color-primary-light)] transition-colors">Multilingual Ingestion (6+ Languages)</a></li>
+              <li><a href="#languages" className="hover:text-[var(--color-primary-light)] transition-colors">Multilingual Ingestion</a></li>
               <li><a href="#features" className="hover:text-[var(--color-primary-light)] transition-colors">Know Your Rights Library</a></li>
             </ul>
           </div>

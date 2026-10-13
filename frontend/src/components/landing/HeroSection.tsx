@@ -84,7 +84,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenChat }) => {
               onClick={onOpenChat}
               className="btn-pill btn-primary-gold px-8 py-4 text-base font-semibold shadow-xl"
             >
-              <span>Ask Nyaysahayak Free</span>
+              <span>Launch Legal Workspace</span>
               <Sparkles className="w-5 h-5 text-slate-950" />
             </button>
 
@@ -105,11 +105,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenChat }) => {
           >
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-              <span>100% Confidential</span>
+              <span>Confidential by Design</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-              <span>Hindi, Tamil & 6+ Languages</span>
+              <span>Hindi, Tamil & Regional Languages</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
@@ -186,7 +186,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenChat }) => {
                 <Shield className="w-4 h-4" />
               </div>
               <div className="text-xs">
-                <strong className="block text-[var(--color-text)]">50,000+ Assisted</strong>
+                <strong className="block text-[var(--color-text)]">Plain-Language Help</strong>
                 <span className="text-[10px] text-[var(--color-text-muted)]">Zero Jargon</span>
               </div>
             </motion.div>

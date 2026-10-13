@@ -9,7 +9,7 @@ Phase 1 Multilingual & OCR Enhancements:
 
 import os
 from typing import List, Dict, Any
-import fitz  # PyMuPDF
+import pymupdf as fitz  # PyMuPDF
 import docx
 
 from app.services.ocr_service import OCRProcessor

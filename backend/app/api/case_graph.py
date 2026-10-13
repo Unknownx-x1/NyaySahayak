@@ -29,6 +29,11 @@ def get_timeline_endpoint(case_id: str, db: Session = Depends(get_db)):
     graph = CaseGraphService.get_latest_case_graph(case_id, db)
     return graph.timeline if graph else []
 
+@router.post("/{case_id}/timeline/generate", response_model=CaseGraph)
+def generate_timeline_endpoint(case_id: str, db: Session = Depends(get_db)):
+    """Compiles or updates timeline specifically with Groq LLM."""
+    return CaseGraphService.compile_timeline_only(case_id, db)
+
 @router.get("/{case_id}/evidence", response_model=List[EvidenceItem])
 def get_evidence_endpoint(case_id: str, db: Session = Depends(get_db)):
     graph = CaseGraphService.get_latest_case_graph(case_id, db)

@@ -18,7 +18,7 @@ export const FaqSection: React.FC = () => {
     },
     {
       question: "Is my case information and document data confidential?",
-      answer: "100% confidential. All uploaded documents and legal queries are encrypted in transit and at rest using bank-grade AES-256 encryption. Your private legal data is never shared with third parties or used to train public AI models."
+      answer: "Confidentiality is central to the product. Uploaded documents and legal queries are protected with encryption in transit and at rest, and private legal data is not shared with third parties or used to train public AI models."
     },
     {
       question: "Which Indian languages are currently supported?",

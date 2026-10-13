@@ -118,7 +118,7 @@ export const Navbar: React.FC<NavbarProps> = ({ theme, onToggleTheme, onOpenChat
             className="btn-pill btn-primary-gold px-5 py-2.5 text-xs sm:text-sm font-semibold tracking-wide"
             style={{ padding: '0.6rem 1.25rem', fontSize: '0.85rem' }}
           >
-            <span>Ask Nyaysahayak Free</span>
+            <span>Launch Workspace</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

@@ -39,6 +39,7 @@ class Case(Base):
     owner = relationship("User", back_populates="cases")
     documents = relationship("Document", back_populates="case", cascade="all, delete-orphan")
     verifications = relationship("CitationVerification", back_populates="case", cascade="all, delete-orphan")
+    case_graphs = relationship("CaseGraphRecord", back_populates="case", cascade="all, delete-orphan")
 
 class Document(Base):
     __tablename__ = "documents"

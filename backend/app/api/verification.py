@@ -5,7 +5,7 @@ Citation Verification and Legal Corpus APIs for NyayTarka.
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from app.db.database import get_db
 from app.db.models import CitationVerification
 from app.schemas.verification import CitationVerificationReport
@@ -50,6 +50,42 @@ def verify_citation_endpoint(req: VerifyRequest, db: Session = Depends(get_db)):
 @router.get("/corpus/whitelist", response_model=List[CorpusSource])
 def get_corpus_whitelist():
     return corpus_registry.list_whitelisted_sources()
+
+class SqlQueryRequest(BaseModel):
+    query: str
+    max_rows: Optional[int] = 50
+
+class SqlQueryResponse(BaseModel):
+    success: bool
+    columns: List[str]
+    rows: List[Dict[str, Any]]
+    row_count: int
+    execution_time_ms: float
+    query: str
+    error: Optional[str] = None
+
+@router.post("/corpus/sql", response_model=SqlQueryResponse)
+def execute_corpus_sql(req: SqlQueryRequest):
+    """Execute a read-only SQL query against the SQLite corpus database."""
+    from app.corpus.corpus_retriever import corpus_retriever
+    res = corpus_retriever.execute_sql(req.query, max_rows=req.max_rows or 50)
+    return SqlQueryResponse(**res)
+
+@router.get("/corpus/stats")
+def get_corpus_stats():
+    """Retrieve statistical summary of the indexed Indian Legal Corpus."""
+    from app.corpus.corpus_retriever import corpus_retriever
+    res = corpus_retriever.execute_sql(
+        "SELECT corpus_type, COUNT(*) as count FROM corpus_chunks GROUP BY corpus_type"
+    )
+    type_counts = {r["corpus_type"]: r["count"] for r in res.get("rows", [])}
+    total = sum(type_counts.values())
+    return {
+        "total_records": total,
+        "breakdown": type_counts,
+        "fts_enabled": True,
+        "db_location": "corpus_index/corpus_chunks.db"
+    }
 
 @router.get("/case/{case_id}", response_model=List[CitationVerificationReport])
 def list_case_verifications(case_id: str, db: Session = Depends(get_db)):
